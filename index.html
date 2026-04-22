@@ -189,9 +189,35 @@
   .sheet-tabs { display: flex; align-items: center; gap: 0; border-top: 1px solid var(--border); background: #f8f9fa; flex-shrink: 0; padding: 0 8px; }
   .sheet-tab { padding: 6px 16px; font-size: 12px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--gray); }
   .sheet-tab.active { border-bottom-color: var(--blue); color: var(--blue); font-weight: 500; }
+
+  /* Password screen */
+  #pw-screen { position:fixed;inset:0;background:#f1f3f4;display:flex;align-items:center;justify-content:center;z-index:9999; }
+  .pw-box { background:#fff;border-radius:8px;padding:40px 36px;width:340px;box-shadow:0 2px 16px rgba(0,0,0,0.12);text-align:center; }
+  .pw-logo { font-size:22px;font-weight:600;color:#1a73e8;margin-bottom:4px; }
+  .pw-sub { font-size:13px;color:#5f6368;margin-bottom:24px; }
+  .pw-box input { width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:4px;font-size:14px;outline:none;margin-bottom:10px;font-family:inherit;box-sizing:border-box; }
+  .pw-box input:focus { border-color:#1a73e8; }
+  .pw-box button { width:100%;padding:10px;background:#1a73e8;color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer;font-family:inherit; }
+  .pw-box button:hover { background:#1557b0; }
+  .pw-error { color:#c0392b;font-size:12px;margin-top:8px;min-height:16px; }
+  #app-wrap { display:none;height:100vh;flex-direction:column; }
 </style>
 </head>
 <body>
+
+<!-- Password Screen -->
+<div id="pw-screen">
+  <div class="pw-box">
+    <div class="pw-logo">Huma Expert Tracker</div>
+    <div class="pw-sub">Enter the team password to continue</div>
+    <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPassword()">
+    <button onclick="checkPassword()">Sign in</button>
+    <div class="pw-error" id="pw-error"></div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app-wrap">
 
 <!-- Top bar -->
 <div class="topbar">
@@ -408,14 +434,14 @@ async function saveData() {
   if (!scriptUrl) return;
   try {
     updateSyncStatus('syncing', 'Saving...');
-    await fetch(scriptUrl + '?action=set', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ data })
-    });
+    // Use GET + encoded payload to avoid CORS preflight blocking
+    const payload = encodeURIComponent(JSON.stringify({ data }));
+    const url = scriptUrl + '?action=set&payload=' + payload;
+    const res = await fetch(url, { method: 'GET', mode: 'no-cors' });
     updateSyncStatus('connected', 'Saved ' + new Date().toLocaleTimeString());
   } catch(e) {
-    updateSyncStatus('error', 'Save failed');
+    updateSyncStatus('error', 'Save failed — check console');
+    console.error('Save error:', e);
   }
 }
 
@@ -616,7 +642,7 @@ async function handleRawUpload(file) {
     const obj = {};
     headers.forEach((h,i) => obj[h.trim()] = String(r[i]||'').trim());
     return obj;
-  }).filter(r => r.Name);
+  }).filter(r => r.Name && (r.Role||'').trim().toLowerCase() !== 'hdm');
 
   // Compare
   const existingNames = new Set(data.map(r => r.Name.trim().toLowerCase()));
@@ -785,6 +811,31 @@ function showToast(msg) {
 }
 
 init();
+
+// ─── PASSWORD ────────────────────────────────────────────────
+// Change this to whatever password you want
+const APP_PASSWORD = 'huma2024';
+
+function checkPassword() {
+  const val = document.getElementById('pw-input').value;
+  if (val === APP_PASSWORD) {
+    sessionStorage.setItem('huma_auth', '1');
+    document.getElementById('pw-screen').style.display = 'none';
+    document.getElementById('app-wrap').style.display = 'flex';
+  } else {
+    document.getElementById('pw-error').textContent = 'Incorrect password. Try again.';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+// Check on load
+if (sessionStorage.getItem('huma_auth') === '1') {
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('app-wrap').style.display = 'flex';
+}
+
 </script>
+</div><!-- /app-wrap -->
 </body>
 </html>
