@@ -693,7 +693,7 @@ function renderAsgn(){
   var rows=getTabRows();
   var titles={new:'New Experts - '+rows.length+' people',newsub:'New Subscriptions - '+rows.length+' people',all:'All Experts - '+rows.length+' people'};
   document.getElementById('asgn-title').textContent=titles[currentTab];
-  var cols=['Name','Personal Email','Company Email','HDM','Pod','Subscription ID','Pay Rate','Client Rate','Role','Domain','Status','Country'];
+  var cols=['Name','Personal Email','Company Email','Domain','Setup Complete','Status','Pod','Not On Slack','HDM'];
   if(!rows.length){document.getElementById('asgn-table-wrap').innerHTML='<p style="color:#9e9e9e;padding:20px 0;">No records here yet.</p>';document.getElementById('copy-hint').textContent='No rows to copy';return;}
   var thead='<thead><tr>'+cols.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr></thead>';
   var tbody='<tbody>'+rows.map(function(r){return '<tr>'+cols.map(function(c){return '<td>'+esc(String(r[c]||''))+'</td>';}).join('')+'</tr>';}).join('')+'</tbody>';
@@ -702,7 +702,7 @@ function renderAsgn(){
 }
 function buildTSV(){
   var rows=getTabRows();
-  var cols=['Name','Personal Email','Company Email','HDM','Pod','Subscription ID','Pay Rate','Client Rate','Role','Domain','Status','Not On Slack','Setup Complete','Source','Country'];
+  var cols=['Name','Personal Email','Company Email','Domain','','Setup Complete','Status','Pod','Not On Slack','HDM'];
   var lines=[cols.join('\t')].concat(rows.map(function(r){return cols.map(function(c){return String(r[c]||'').replace(/\t/g,' ');}).join('\t');}));
   return lines.join('\n');
 }
@@ -714,8 +714,9 @@ function copyAsgn(){
 }
 function downloadAsgn(){
   var rows=getTabRows();
-  var cols=['Name','Personal Email','Company Email','HDM','Pod','Subscription ID','Pay Rate','Client Rate','Role','Domain','Status','Not On Slack','Setup Complete','Source','Country'];
-  var csv=[cols.join(',')].concat(rows.map(function(r){return cols.map(function(c){var v=String(r[c]||'');return v.includes(',')?'"'+v+'"':v;}).join(',');})).join('\n');
+  var cols=['Name','Personal Email','Company Email','Domain','','Setup Complete','Status','Pod','Not On Slack','HDM'];
+  var header=['Name','Personal Email','Expert Email','Domain','OS','Setup Complete','Status','Pod','Not On Slack','HDM'].join(',');
+  var csv=[header].concat(rows.map(function(r){return cols.map(function(c){var v=String(r[c]||'');return v.includes(',')?'"'+v+'"':v;}).join(',');})).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='huma_'+(currentTab==='new'?'new_experts':currentTab==='newsub'?'new_subscriptions':'all_experts')+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
 }
