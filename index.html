@@ -702,9 +702,14 @@ function renderAsgn(){
 }
 function buildTSV(){
   var rows=getTabRows();
-  var cols=['Name','Personal Email','Company Email','Domain','','Setup Complete','Status','Pod','Not On Slack','HDM'];
-  var lines=[cols.join('\t')].concat(rows.map(function(r){return cols.map(function(c){return String(r[c]||'').replace(/\t/g,' ');}).join('\t');}));
-  return lines.join('\n');
+  var TAB=String.fromCharCode(9);
+  var NL=String.fromCharCode(10);
+  var dataKeys=['Name','Personal Email','Company Email','Domain','','Setup Complete','Status','Pod','Not On Slack','HDM'];
+  var displayHeaders=['Name','Personal Email','Expert Email','Domain','OS','Setup Complete','Status','Pod','Not On Slack','HDM'];
+  var lines=[displayHeaders.join(TAB)].concat(rows.map(function(r){
+    return dataKeys.map(function(k){return k?String(r[k]||'').replace(new RegExp(TAB,'g'),' '):'';}).join(TAB);
+  }));
+  return lines.join(NL);
 }
 function copyAsgn(){
   var tsv=buildTSV();
@@ -713,12 +718,21 @@ function copyAsgn(){
   });
 }
 function downloadAsgn(){
+  var NL=String.fromCharCode(10);
   var rows=getTabRows();
-  var cols=['Name','Personal Email','Company Email','Domain','','Setup Complete','Status','Pod','Not On Slack','HDM'];
-  var header=['Name','Personal Email','Expert Email','Domain','OS','Setup Complete','Status','Pod','Not On Slack','HDM'].join(',');
-  var csv=[header].concat(rows.map(function(r){return cols.map(function(c){var v=String(r[c]||'');return v.includes(',')?'"'+v+'"':v;}).join(',');})).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='huma_'+(currentTab==='new'?'new_experts':currentTab==='newsub'?'new_subscriptions':'all_experts')+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  var dataKeys=['Name','Personal Email','Company Email','Domain','','Setup Complete','Status','Pod','Not On Slack','HDM'];
+  var displayHeaders=['Name','Personal Email','Expert Email','Domain','OS','Setup Complete','Status','Pod','Not On Slack','HDM'];
+  var header=displayHeaders.join(',');
+  var csv=[header].concat(rows.map(function(r){
+    return dataKeys.map(function(k){
+      var v=k?String(r[k]||''):'';
+      return v.indexOf(',')>=0?'"'+v+'"':v;
+    }).join(',');
+  })).join(NL);
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='huma_'+(currentTab==='new'?'new_experts':currentTab==='newsub'?'new_subscriptions':'all_experts')+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
 }
 
 init();
