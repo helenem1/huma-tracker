@@ -7,200 +7,127 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
-    --green: #1e7e34;
-    --green-light: #d4edda;
-    --green-mid: #28a745;
-    --blue: #1a73e8;
-    --blue-light: #e8f0fe;
-    --red: #c0392b;
-    --red-light: #fdecea;
-    --amber: #f59e0b;
-    --amber-light: #fffbeb;
-    --gray: #5f6368;
-    --border: #e0e0e0;
-    --row-hover: #f8f9fa;
-    --header-bg: #f1f3f4;
-    --frozen-bg: #fff;
-    --tag-no-sub: #ff6d00;
-    --font: 'Google Sans', 'Segoe UI', Arial, sans-serif;
+    --green: #1e7e34; --green-light: #d4edda; --green-mid: #28a745;
+    --blue: #1a73e8; --blue-light: #e8f0fe;
+    --red: #c0392b; --red-light: #fdecea;
+    --amber: #f59e0b; --gray: #5f6368;
+    --border: #e0e0e0; --row-hover: #f8f9fa;
+    --header-bg: #f1f3f4; --tag-no-sub: #ff6d00;
+    --font: 'Google Sans','Segoe UI',Arial,sans-serif;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font); font-size: 13px; color: #202124; background: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-  /* Top bar */
-  .topbar { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); background: #fff; flex-shrink: 0; }
-  .logo { font-size: 18px; font-weight: 600; color: #1a73e8; letter-spacing: -0.5px; white-space: nowrap; }
-  .logo span { color: #5f6368; font-weight: 400; }
-  .topbar-spacer { flex: 1; }
-  .sync-status { font-size: 12px; color: var(--gray); display: flex; align-items: center; gap: 6px; }
-  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
-  .sync-dot.connected { background: var(--green-mid); }
-  .sync-dot.error { background: var(--red); }
-  .sync-dot.syncing { background: var(--amber); animation: pulse 1s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
-
-  /* Toolbar */
-  .toolbar { display: flex; align-items: center; gap: 8px; padding: 6px 16px; border-bottom: 1px solid var(--border); background: #fff; flex-shrink: 0; flex-wrap: wrap; }
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 4px; background: #fff; font-size: 12px; font-family: var(--font); cursor: pointer; color: #202124; transition: background 0.1s; white-space: nowrap; }
-  .btn:hover { background: var(--header-bg); }
-  .btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
-  .btn.primary:hover { background: #1557b0; }
-  .btn.danger { color: var(--red); border-color: #fcc; }
-  .btn.danger:hover { background: var(--red-light); }
-  .toolbar-sep { width: 1px; height: 24px; background: var(--border); }
-  .search-box { display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; background: var(--header-bg); }
-  .search-box input { border: none; background: transparent; font-size: 13px; font-family: var(--font); outline: none; width: 200px; }
-  .filter-group { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--gray); }
-  .filter-group select { border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; font-size: 12px; font-family: var(--font); background: #fff; }
-
-  /* Stats bar */
-  .statsbar { display: flex; align-items: center; gap: 16px; padding: 4px 16px; border-bottom: 1px solid var(--border); background: #fafafa; flex-shrink: 0; font-size: 12px; color: var(--gray); overflow-x: auto; }
-  .stat-item { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-  .stat-badge { padding: 2px 8px; border-radius: 10px; font-weight: 500; font-size: 11px; }
-  .badge-total { background: var(--blue-light); color: var(--blue); }
-  .badge-nosub { background: #fff3e0; color: var(--tag-no-sub); }
-  .badge-new { background: var(--green-light); color: var(--green); }
-  .badge-removed { background: var(--red-light); color: var(--red); }
-
-  /* Table container */
-  .table-wrap { flex: 1; overflow: auto; position: relative; }
-
-  /* Spreadsheet table */
-  table { border-collapse: collapse; min-width: 100%; font-size: 13px; }
-  thead th {
-    position: sticky; top: 0; z-index: 10;
-    background: var(--header-bg);
-    border-right: 1px solid var(--border);
-    border-bottom: 2px solid #bdbdbd;
-    padding: 6px 10px;
-    text-align: left;
-    font-weight: 500;
-    white-space: nowrap;
-    user-select: none;
-    font-size: 12px;
-    color: var(--gray);
-  }
-  thead th:first-child { position: sticky; left: 0; z-index: 20; background: var(--header-bg); min-width: 36px; text-align: center; }
-  thead th:nth-child(2) { position: sticky; left: 36px; z-index: 20; background: var(--header-bg); min-width: 200px; }
-  thead th.sortable:hover { background: #e8eaed; cursor: pointer; }
-  .sort-arrow { margin-left: 4px; opacity: 0.5; }
-  .sort-arrow.active { opacity: 1; color: var(--blue); }
-
-  tbody tr { border-bottom: 1px solid #f0f0f0; }
-  tbody tr:hover { background: var(--row-hover); }
-  tbody tr.selected { background: #e8f0fe !important; }
-  tbody tr.new-row { background: #f0fff4 !important; }
-  tbody tr.removed-row { background: var(--red-light) !important; opacity: 0.6; }
-  tbody tr.no-sub td:first-child::before { content: ''; }
-
-  tbody td {
-    padding: 5px 10px;
-    border-right: 1px solid #f0f0f0;
-    white-space: nowrap;
-    max-width: 240px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    vertical-align: middle;
-  }
-  tbody td:first-child {
-    position: sticky; left: 0; z-index: 5;
-    background: inherit;
-    text-align: center;
-    color: var(--gray);
-    font-size: 11px;
-    width: 36px;
-    min-width: 36px;
-    border-right: 1px solid var(--border);
-  }
-  tbody td:nth-child(2) {
-    position: sticky; left: 36px; z-index: 5;
-    background: inherit;
-    font-weight: 500;
-    border-right: 1px solid var(--border);
-    min-width: 200px;
-  }
-  tbody tr.new-row td:first-child, tbody tr.new-row td:nth-child(2) { background: #f0fff4; }
-  tbody tr.selected td:first-child, tbody tr.selected td:nth-child(2) { background: #e8f0fe; }
-  tbody tr:hover td:first-child, tbody tr:hover td:nth-child(2) { background: var(--row-hover); }
-
-  /* Inline editing */
-  td.editable:hover { background: #f0f7ff !important; cursor: text; outline: 1px solid #aac4ee; outline-offset: -1px; }
-  td.editing { padding: 0 !important; outline: 2px solid var(--blue) !important; outline-offset: -2px; }
-  td.editing input, td.editing select {
-    width: 100%; height: 100%; min-height: 29px;
-    border: none; outline: none; padding: 5px 10px;
-    font-size: 13px; font-family: var(--font);
-    background: #fff;
-  }
-
-  /* Badges/tags in cells */
-  .tag { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 500; }
-  .tag-active { background: var(--green-light); color: var(--green); }
-  .tag-nosub { background: #fff3e0; color: var(--tag-no-sub); border: 1px solid #ffe0b2; }
-  .tag-bool-true { background: var(--green-light); color: var(--green); }
-  .tag-bool-false { background: #f5f5f5; color: #9e9e9e; }
-  .tag-new { background: var(--green-light); color: var(--green); font-size: 10px; padding: 1px 5px; border-radius: 8px; margin-left: 4px; }
-  .tag-removed { background: var(--red-light); color: var(--red); font-size: 10px; padding: 1px 5px; border-radius: 8px; margin-left: 4px; }
-  .flag-nosub { display: inline-flex; align-items: center; gap: 4px; }
-  .flag-nosub::before { content: '⚑'; font-size: 11px; color: var(--tag-no-sub); }
-
-  /* Changelog panel */
-  .changelog-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100; }
-  .changelog-overlay.open { display: flex; align-items: flex-end; justify-content: flex-end; }
-  .changelog-panel { background: #fff; width: 420px; height: 100vh; border-left: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: -4px 0 16px rgba(0,0,0,0.12); }
-  .changelog-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); font-weight: 500; }
-  .changelog-body { flex: 1; overflow-y: auto; padding: 12px 16px; }
-  .cl-group { margin-bottom: 16px; }
-  .cl-group-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray); margin-bottom: 8px; }
-  .cl-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5; font-size: 12px; }
-  .cl-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
-  .cl-icon-add { background: var(--green-light); color: var(--green); }
-  .cl-icon-remove { background: var(--red-light); color: var(--red); }
-  .cl-icon-edit { background: var(--blue-light); color: var(--blue); }
-  .cl-text { flex: 1; line-height: 1.4; }
-  .cl-name { font-weight: 500; }
-  .cl-detail { color: var(--gray); }
-  .cl-time { font-size: 11px; color: #bbb; }
-
-  /* Paste modal */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: #fff; border-radius: 8px; padding: 24px; width: 560px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
-  .modal h2 { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
-  .modal p { font-size: 13px; color: var(--gray); margin-bottom: 12px; }
-  .modal textarea { flex: 1; min-height: 180px; border: 1px solid var(--border); border-radius: 4px; padding: 10px; font-size: 12px; font-family: monospace; resize: vertical; outline: none; }
-  .modal textarea:focus { border-color: var(--blue); }
-  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-
-  /* Toast */
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #323232; color: #fff; padding: 10px 20px; border-radius: 4px; font-size: 13px; z-index: 300; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
-  .toast.show { opacity: 1; }
-
-  /* Upload modal */
-  .upload-drop { border: 2px dashed var(--border); border-radius: 6px; padding: 24px; text-align: center; cursor: pointer; margin-bottom: 12px; transition: background 0.15s; }
-  .upload-drop:hover, .upload-drop.dragover { background: var(--blue-light); border-color: var(--blue); }
-  .upload-drop p { font-size: 13px; color: var(--gray); margin: 4px 0; }
-  .upload-drop strong { color: #202124; }
-
-  /* Row count */
-  .row-count { font-size: 11px; color: var(--gray); padding: 3px 16px; border-top: 1px solid var(--border); background: #fafafa; flex-shrink: 0; }
-
-  /* Sheet tabs */
-  .sheet-tabs { display: flex; align-items: center; gap: 0; border-top: 1px solid var(--border); background: #f8f9fa; flex-shrink: 0; padding: 0 8px; }
-  .sheet-tab { padding: 6px 16px; font-size: 12px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--gray); }
-  .sheet-tab.active { border-bottom-color: var(--blue); color: var(--blue); font-weight: 500; }
-
-  /* Password screen */
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:var(--font); font-size:13px; color:#202124; background:#fff; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  /* Password */
   #pw-screen { position:fixed;inset:0;background:#f1f3f4;display:flex;align-items:center;justify-content:center;z-index:9999; }
-  .pw-box { background:#fff;border-radius:8px;padding:40px 36px;width:340px;box-shadow:0 2px 16px rgba(0,0,0,0.12);text-align:center; }
+  .pw-box { background:#fff;border-radius:8px;padding:40px 36px;width:340px;box-shadow:0 2px 16px rgba(0,0,0,.12);text-align:center; }
   .pw-logo { font-size:22px;font-weight:600;color:#1a73e8;margin-bottom:4px; }
   .pw-sub { font-size:13px;color:#5f6368;margin-bottom:24px; }
-  .pw-box input { width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:4px;font-size:14px;outline:none;margin-bottom:10px;font-family:inherit;box-sizing:border-box; }
+  .pw-box input { width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:4px;font-size:14px;outline:none;margin-bottom:10px;font-family:inherit; }
   .pw-box input:focus { border-color:#1a73e8; }
   .pw-box button { width:100%;padding:10px;background:#1a73e8;color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer;font-family:inherit; }
   .pw-box button:hover { background:#1557b0; }
   .pw-error { color:#c0392b;font-size:12px;margin-top:8px;min-height:16px; }
   #app-wrap { display:none;height:100vh;flex-direction:column; }
+  /* Top bar */
+  .topbar { display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid var(--border);background:#fff;flex-shrink:0; }
+  .logo { font-size:18px;font-weight:600;color:#1a73e8;letter-spacing:-.5px;white-space:nowrap; }
+  .logo span { color:#5f6368;font-weight:400; }
+  .topbar-spacer { flex:1; }
+  .sync-status { font-size:12px;color:var(--gray);display:flex;align-items:center;gap:6px; }
+  .sync-dot { width:8px;height:8px;border-radius:50%;background:#ccc; }
+  .sync-dot.connected { background:var(--green-mid); }
+  .sync-dot.error { background:var(--red); }
+  .sync-dot.syncing { background:var(--amber);animation:pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+  /* Toolbar */
+  .toolbar { display:flex;align-items:center;gap:8px;padding:6px 16px;border-bottom:1px solid var(--border);background:#fff;flex-shrink:0;flex-wrap:wrap; }
+  .btn { display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border);border-radius:4px;background:#fff;font-size:12px;font-family:var(--font);cursor:pointer;color:#202124;transition:background .1s;white-space:nowrap; }
+  .btn:hover { background:var(--header-bg); }
+  .btn.primary { background:var(--blue);color:#fff;border-color:var(--blue); }
+  .btn.primary:hover { background:#1557b0; }
+  .btn.success { background:#28a745;color:#fff;border-color:#28a745; }
+  .btn.success:hover { background:#1e7e34; }
+  .btn.danger { color:var(--red);border-color:#fcc; }
+  .btn.danger:hover { background:var(--red-light); }
+  .toolbar-sep { width:1px;height:24px;background:var(--border); }
+  .search-box { display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:4px;padding:4px 10px;background:var(--header-bg); }
+  .search-box input { border:none;background:transparent;font-size:13px;font-family:var(--font);outline:none;width:200px; }
+  .filter-group { display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray); }
+  .filter-group select { border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:12px;font-family:var(--font);background:#fff; }
+  /* Stats bar */
+  .statsbar { display:flex;align-items:center;gap:16px;padding:4px 16px;border-bottom:1px solid var(--border);background:#fafafa;flex-shrink:0;font-size:12px;color:var(--gray);overflow-x:auto; }
+  .stat-item { display:flex;align-items:center;gap:4px;white-space:nowrap; }
+  .stat-badge { padding:2px 8px;border-radius:10px;font-weight:500;font-size:11px; }
+  .badge-total { background:var(--blue-light);color:var(--blue); }
+  .badge-nosub { background:#fff3e0;color:var(--tag-no-sub); }
+  .badge-new { background:var(--green-light);color:var(--green); }
+  .badge-removed { background:var(--red-light);color:var(--red); }
+  /* Table */
+  .table-wrap { flex:1;overflow:auto;position:relative; }
+  table { border-collapse:collapse;min-width:100%;font-size:13px; }
+  thead th { position:sticky;top:0;z-index:10;background:var(--header-bg);border-right:1px solid var(--border);border-bottom:2px solid #bdbdbd;padding:6px 10px;text-align:left;font-weight:500;white-space:nowrap;user-select:none;font-size:12px;color:var(--gray); }
+  thead th:first-child { position:sticky;left:0;z-index:20;background:var(--header-bg);min-width:36px;text-align:center; }
+  thead th:nth-child(2) { position:sticky;left:36px;z-index:20;background:var(--header-bg);min-width:200px; }
+  thead th.sortable:hover { background:#e8eaed;cursor:pointer; }
+  .sort-arrow { margin-left:4px;opacity:.5; }
+  .sort-arrow.active { opacity:1;color:var(--blue); }
+  tbody tr { border-bottom:1px solid #f0f0f0; }
+  tbody tr:hover { background:var(--row-hover); }
+  tbody tr.selected { background:#e8f0fe !important; }
+  tbody tr.new-row { background:#f0fff4 !important; }
+  tbody tr.removed-row { background:var(--red-light) !important;opacity:.6; }
+  tbody td { padding:5px 10px;border-right:1px solid #f0f0f0;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle; }
+  tbody td:first-child { position:sticky;left:0;z-index:5;background:inherit;text-align:center;color:var(--gray);font-size:11px;width:36px;min-width:36px;border-right:1px solid var(--border); }
+  tbody td:nth-child(2) { position:sticky;left:36px;z-index:5;background:inherit;font-weight:500;border-right:1px solid var(--border);min-width:200px; }
+  tbody tr.new-row td:first-child, tbody tr.new-row td:nth-child(2) { background:#f0fff4; }
+  tbody tr.selected td:first-child, tbody tr.selected td:nth-child(2) { background:#e8f0fe; }
+  tbody tr:hover td:first-child, tbody tr:hover td:nth-child(2) { background:var(--row-hover); }
+  td.editable:hover { background:#f0f7ff !important;cursor:text;outline:1px solid #aac4ee;outline-offset:-1px; }
+  td.editing { padding:0 !important;outline:2px solid var(--blue) !important;outline-offset:-2px; }
+  td.editing input, td.editing select { width:100%;height:100%;min-height:29px;border:none;outline:none;padding:5px 10px;font-size:13px;font-family:var(--font);background:#fff; }
+  .tag { display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:500; }
+  .tag-active { background:var(--green-light);color:var(--green); }
+  .tag-nosub { background:#fff3e0;color:var(--tag-no-sub);border:1px solid #ffe0b2; }
+  .tag-bool-true { background:var(--green-light);color:var(--green); }
+  .tag-bool-false { background:#f5f5f5;color:#9e9e9e; }
+  .tag-new { background:var(--green-light);color:var(--green);font-size:10px;padding:1px 5px;border-radius:8px;margin-left:4px; }
+  .tag-removed { background:var(--red-light);color:var(--red);font-size:10px;padding:1px 5px;border-radius:8px;margin-left:4px; }
+  /* Changelog */
+  .changelog-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:100; }
+  .changelog-overlay.open { display:flex;align-items:flex-end;justify-content:flex-end; }
+  .changelog-panel { background:#fff;width:420px;height:100vh;border-left:1px solid var(--border);display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.12); }
+  .changelog-header { display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);font-weight:500; }
+  .changelog-body { flex:1;overflow-y:auto;padding:12px 16px; }
+  .cl-item { display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:12px; }
+  .cl-icon { width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:1px; }
+  .cl-icon-add { background:var(--green-light);color:var(--green); }
+  .cl-icon-remove { background:var(--red-light);color:var(--red); }
+  .cl-icon-edit { background:var(--blue-light);color:var(--blue); }
+  .cl-text { flex:1;line-height:1.4; }
+  .cl-name { font-weight:500; }
+  .cl-detail { color:var(--gray); }
+  .cl-time { font-size:11px;color:#bbb; }
+  /* Modals */
+  .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:#fff;border-radius:8px;padding:24px;width:560px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2); }
+  .modal h2 { font-size:16px;font-weight:500;margin-bottom:4px; }
+  .modal p { font-size:13px;color:var(--gray);margin-bottom:12px; }
+  .modal textarea { flex:1;min-height:180px;border:1px solid var(--border);border-radius:4px;padding:10px;font-size:12px;font-family:monospace;resize:vertical;outline:none; }
+  .modal textarea:focus { border-color:var(--blue); }
+  .modal-footer { display:flex;justify-content:flex-end;gap:8px;margin-top:12px; }
+  .upload-drop { border:2px dashed var(--border);border-radius:6px;padding:24px;text-align:center;cursor:pointer;margin-bottom:12px;transition:background .15s; }
+  .upload-drop:hover, .upload-drop.dragover { background:var(--blue-light);border-color:var(--blue); }
+  .upload-drop p { font-size:13px;color:var(--gray);margin:4px 0; }
+  .upload-drop strong { color:#202124; }
+  /* Toast */
+  .toast { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 20px;border-radius:4px;font-size:13px;z-index:300;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap; }
+  .toast.show { opacity:1; }
+  /* Row count / tabs */
+  .row-count { font-size:11px;color:var(--gray);padding:3px 16px;border-top:1px solid var(--border);background:#fafafa;flex-shrink:0; }
+  .sheet-tabs { display:flex;align-items:center;border-top:1px solid var(--border);background:#f8f9fa;flex-shrink:0;padding:0 8px; }
+  .sheet-tab { padding:6px 16px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;color:var(--gray); }
+  .sheet-tab.active { border-bottom-color:var(--blue);color:var(--blue);font-weight:500; }
 </style>
 </head>
 <body>
@@ -227,13 +154,15 @@
     <div class="sync-dot" id="sync-dot"></div>
     <span id="sync-label">Not connected</span>
   </div>
+  <button class="btn success" onclick="pushToSheet()" title="Force push all data to Google Sheet">⬆ Push to Sheet</button>
   <button class="btn" onclick="openSettings()">⚙ Settings</button>
 </div>
 
 <!-- Toolbar -->
 <div class="toolbar">
-  <button class="btn primary" onclick="openUploadModal()">↑ Upload Raw Data</button>
-  <button class="btn" onclick="openPasteModal()">⊞ Paste New Data</button>
+  <button class="btn primary" onclick="openUploadModal('raw')">↑ Upload Raw Data</button>
+  <button class="btn primary" style="background:#6f42c1;border-color:#6f42c1;" onclick="openUploadModal('base')">↑ Upload Base Sheet</button>
+  <button class="btn" onclick="openPasteModal()">⊞ Paste Data</button>
   <div class="toolbar-sep"></div>
   <button class="btn" onclick="exportCSV()">↓ Export CSV</button>
   <button class="btn" onclick="toggleChangelog()">⟳ Changes <span id="change-count" style="display:none;background:#e53935;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:2px;"></span></button>
@@ -242,30 +171,16 @@
     <span style="color:#9aa0a6;">🔍</span>
     <input type="text" placeholder="Search experts..." id="search-input" oninput="filterTable()">
   </div>
-  <div class="filter-group">
-    HDM:
-    <select id="filter-hdm" onchange="filterTable()">
-      <option value="">All</option>
-    </select>
-  </div>
-  <div class="filter-group">
-    Pod:
-    <select id="filter-pod" onchange="filterTable()">
-      <option value="">All</option>
-    </select>
-  </div>
-  <div class="filter-group">
-    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-      <input type="checkbox" id="filter-nosub" onchange="filterTable()"> Flag no Sub ID
-    </label>
-  </div>
+  <div class="filter-group">HDM: <select id="filter-hdm" onchange="filterTable()"><option value="">All</option></select></div>
+  <div class="filter-group">Pod: <select id="filter-pod" onchange="filterTable()"><option value="">All</option></select></div>
+  <div class="filter-group"><label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="filter-nosub" onchange="filterTable()"> No Sub ID</label></div>
 </div>
 
 <!-- Stats bar -->
 <div class="statsbar">
   <div class="stat-item">Total: <span class="stat-badge badge-total" id="stat-total">0</span></div>
   <div class="stat-item">No Subscription: <span class="stat-badge badge-nosub" id="stat-nosub">0</span></div>
-  <div class="stat-item" id="stat-new-wrap" style="display:none">New this sync: <span class="stat-badge badge-new" id="stat-new">0</span></div>
+  <div class="stat-item" id="stat-new-wrap" style="display:none">New: <span class="stat-badge badge-new" id="stat-new">0</span></div>
   <div class="stat-item" id="stat-removed-wrap" style="display:none">Removed: <span class="stat-badge badge-removed" id="stat-removed">0</span></div>
   <div style="flex:1"></div>
   <div class="stat-item" style="color:#bbb;" id="last-sync-label"></div>
@@ -278,38 +193,27 @@
     <tbody id="table-body"></tbody>
   </table>
 </div>
-
-<!-- Row count -->
 <div class="row-count" id="row-count"></div>
+<div class="sheet-tabs"><div class="sheet-tab active">All Experts</div></div>
 
-<!-- Sheet tabs -->
-<div class="sheet-tabs">
-  <div class="sheet-tab active">All Experts</div>
-</div>
-
-<!-- Changelog panel -->
+<!-- Changelog -->
 <div class="changelog-overlay" id="changelog-overlay" onclick="if(event.target===this)toggleChangelog()">
   <div class="changelog-panel">
-    <div class="changelog-header">
-      <span>Change log</span>
-      <button class="btn" style="border:none;padding:4px 8px;" onclick="toggleChangelog()">✕</button>
-    </div>
-    <div class="changelog-body" id="changelog-body">
-      <p style="color:#9e9e9e;font-size:13px;">No changes recorded yet. Upload raw data to see what changed.</p>
-    </div>
+    <div class="changelog-header"><span>Change log</span><button class="btn" style="border:none;padding:4px 8px;" onclick="toggleChangelog()">✕</button></div>
+    <div class="changelog-body" id="changelog-body"><p style="color:#9e9e9e;font-size:13px;">No changes yet.</p></div>
   </div>
 </div>
 
-<!-- Upload modal -->
+<!-- Upload modal (shared for raw + base) -->
 <div class="modal-overlay" id="upload-modal" onclick="if(event.target===this)closeUploadModal()">
   <div class="modal">
-    <h2>Upload Expert Raw Data</h2>
-    <p>Upload the latest raw data CSV/Excel. The tool will detect new experts, removed experts, and flag those without a Subscription ID.</p>
-    <div class="upload-drop" id="upload-drop" onclick="document.getElementById('raw-file-input').click()">
+    <h2 id="upload-modal-title">Upload Data</h2>
+    <p id="upload-modal-desc"></p>
+    <div class="upload-drop" id="upload-drop" onclick="document.getElementById('file-input').click()">
       <div style="font-size:28px;margin-bottom:8px;">📄</div>
       <p><strong>Click to upload</strong> or drag and drop</p>
       <p>CSV or Excel (.xlsx, .xls)</p>
-      <input type="file" id="raw-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleRawUpload(this.files[0])">
+      <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleUpload(this.files[0])">
     </div>
     <div id="upload-preview" style="display:none;font-size:12px;color:var(--gray);margin-bottom:12px;padding:10px;background:#f8f9fa;border-radius:4px;"></div>
     <div class="modal-footer">
@@ -322,9 +226,9 @@
 <!-- Paste modal -->
 <div class="modal-overlay" id="paste-modal" onclick="if(event.target===this)closePasteModal()">
   <div class="modal">
-    <h2>Paste New Expert Data</h2>
-    <p>Copy and paste rows from your Google Sheet (include the header row). Tab-separated or comma-separated both work.</p>
-    <textarea id="paste-input" placeholder="Name&#9;Personal Email&#9;Company Email&#9;Domain&#9;Setup Complete&#9;Status&#9;Pod&#9;Not On Slack&#9;HDM&#9;..."></textarea>
+    <h2>Paste Expert Data</h2>
+    <p>Copy rows from your Google Sheet and paste below. Include the header row.</p>
+    <textarea id="paste-input" placeholder="Name&#9;Personal Email&#9;..."></textarea>
     <div id="paste-preview" style="font-size:12px;color:var(--gray);margin-top:8px;"></div>
     <div class="modal-footer">
       <button class="btn" onclick="closePasteModal()">Cancel</button>
@@ -337,12 +241,11 @@
 <div class="modal-overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
   <div class="modal" style="width:480px;">
     <h2>Settings — Google Sheets Backend</h2>
-    <p>Connect to a Google Apps Script web app to persist data across all users.</p>
+    <p>Paste your Apps Script Web App URL to sync data across all users.</p>
     <div style="margin-bottom:12px;">
       <label style="font-size:12px;font-weight:500;display:block;margin-bottom:4px;">Apps Script Web App URL</label>
       <input type="text" id="script-url-input" placeholder="https://script.google.com/macros/s/YOUR_ID/exec"
         style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:var(--font);outline:none;">
-      <p style="font-size:11px;color:var(--gray);margin-top:4px;">See the included <code>google-apps-script.js</code> for setup instructions.</p>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeSettings()">Cancel</button>
@@ -352,38 +255,60 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
+</div><!-- /app-wrap -->
+
 <script>
-// ─── CONFIG ──────────────────────────────────────────────────────────────────
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const APP_PASSWORD = 'huma2024';
+
 const COLUMNS = [
-  { key: 'Name',            label: 'Name',            width: 200, editable: false },
-  { key: 'Personal Email',  label: 'Personal Email',  width: 220, editable: true },
-  { key: 'Company Email',   label: 'Company Email',   width: 220, editable: true },
-  { key: 'Domain',          label: 'Domain',          width: 110, editable: true },
-  { key: 'Setup Complete',  label: 'Setup Complete',  width: 110, editable: true, type: 'bool' },
-  { key: 'Status',          label: 'Status',          width: 90,  editable: true, type: 'select', options: ['Active','Inactive','Removed'] },
-  { key: 'Pod',             label: 'Pod',             width: 120, editable: true, type: 'select', options: ['Andromeda','Betelgeuse','Callisto','Draco','Europa','Fomalhaut','Ganymede'] },
-  { key: 'Not On Slack',    label: 'Not On Slack',    width: 100, editable: true },
-  { key: 'HDM',             label: 'HDM',             width: 200, editable: true, type: 'select', options: ['Ankush Nayyar','Davinia del Campo','Marian Osaro','Maria Rochefel Rivera-De Ocampo','Sebastian Valenzuela Gomez','Venancio Flores','Anshuman Nayak'] },
-  { key: 'Role',            label: 'Role',            width: 90,  editable: true },
-  { key: 'Pay Rate',        label: 'Pay Rate',        width: 90,  editable: true },
-  { key: 'Client Rate',     label: 'Client Rate',     width: 95,  editable: true },
-  { key: 'Subscription ID', label: 'Subscription ID', width: 120, editable: true },
-  { key: 'Source',          label: 'Source',          width: 90,  editable: true },
-  { key: 'Country',         label: 'Country',         width: 200, editable: true },
+  { key:'Name',            label:'Name',            width:200, editable:false },
+  { key:'Personal Email',  label:'Personal Email',  width:220, editable:true },
+  { key:'Company Email',   label:'Company Email',   width:220, editable:true },
+  { key:'Domain',          label:'Domain',          width:110, editable:true },
+  { key:'Setup Complete',  label:'Setup Complete',  width:110, editable:true, type:'bool' },
+  { key:'Status',          label:'Status',          width:90,  editable:true, type:'select', options:['Active','Inactive','Removed'] },
+  { key:'Pod',             label:'Pod',             width:120, editable:true, type:'select', options:['Andromeda','Betelgeuse','Callisto','Draco','Europa','Fomalhaut','Ganymede'] },
+  { key:'Not On Slack',    label:'Not On Slack',    width:100, editable:true },
+  { key:'HDM',             label:'HDM',             width:200, editable:true, type:'select', options:['Ankush Nayyar','Davinia del Campo','Marian Osaro','Maria Rochefel Rivera-De Ocampo','Sebastian Valenzuela Gomez','Venancio Flores','Anshuman Nayak'] },
+  { key:'Role',            label:'Role',            width:90,  editable:true },
+  { key:'Pay Rate',        label:'Pay Rate',        width:90,  editable:true },
+  { key:'Client Rate',     label:'Client Rate',     width:95,  editable:true },
+  { key:'Subscription ID', label:'Subscription ID', width:120, editable:true },
+  { key:'Source',          label:'Source',          width:90,  editable:true },
+  { key:'Country',         label:'Country',         width:200, editable:true },
 ];
 
-const INITIAL_DATA = [{"Name":"Aafes Thairu","Personal Email":"aafes.thairu@gmail.com","Company Email":"aath142@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"17","Client Rate":"24.28","Subscription ID":"30614","Source":"micro1","Country":"Kenya"},{"Name":"Abbas Abubakar","Personal Email":"abmattex@gmail.com","Company Email":"abab119@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30582","Source":"micro1","Country":"Nigeria"},{"Name":"ABDULROQEEB ARIWOOLA","Personal Email":"ariwoolaabdulroqeeb@gmail.com","Company Email":"aa363@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30670","Source":"micro1","Country":"United States of America (the)"},{"Name":"Abolarinwa Sodipo","Personal Email":"sodipo.ea01@gmail.com","Company Email":"abso082@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"40","Client Rate":"57.14","Subscription ID":"30671","Source":"micro1","Country":"Nigeria"},{"Name":"Ahmad Tawfiq Ahmed Jundi","Personal Email":"ahmadjundi19972999@gmail.com","Company Email":"ahju517@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"19","Client Rate":"29.23","Subscription ID":"29998","Source":"micro1","Country":"Türkiye"},{"Name":"Ahmed ElMokaddem","Personal Email":"ahmed.elmokaddem@yahoo.com","Company Email":"ahel872@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"58","Client Rate":"82.85","Subscription ID":"29996","Source":"micro1","Country":"Czechia"},{"Name":"Akanksha Kajal","Personal Email":"kajalaksh8@gmail.com","Company Email":"akka279@expert.micro1.ai","Domain":"Adobecc","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"30","Client Rate":"42.85","Subscription ID":"30645","Source":"micro1","Country":"India"},{"Name":"Aline Magno","Personal Email":"alinelmm@gmail.com","Company Email":"alma574@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"65","Client Rate":"92.85","Subscription ID":"30578","Source":"micro1","Country":"Brazil"},{"Name":"Andrea Venegas Zeledon","Personal Email":"avenegaszeledon@gmail.com","Company Email":"anve385@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"28","Client Rate":"40.0","Subscription ID":"30584","Source":"micro1","Country":"Costa Rica"},{"Name":"Andrew Paul","Personal Email":"computingconsultancy@andrewpaul.co","Company Email":"anpa049@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30628","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Ankit handa","Personal Email":"ankithanda2009@gmail.com","Company Email":"anha740@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"29997","Source":"micro1","Country":"Germany"},{"Name":"Annabelle Adams","Personal Email":"sailor3688ann@gmail.com","Company Email":"anad921@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"24","Client Rate":"34.28","Subscription ID":"30577","Source":"micro1","Country":"Germany"},{"Name":"Antonella Grossolano","Personal Email":"anto.grossolano@gmail.com","Company Email":"ag101@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"50","Client Rate":"71.42","Subscription ID":"30660","Source":"micro1","Country":"Spain"},{"Name":"Aritra Chatterjee","Personal Email":"aritra1807@gmail.com","Company Email":"arch714@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"60","Client Rate":"85.71","Subscription ID":"30633","Source":"micro1","Country":"India"},{"Name":"Arshad Ali","Personal Email":"arshadali2006@gmail.com","Company Email":"aral740@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"X","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"28","Client Rate":"43.07","Subscription ID":"","Source":"sheets","Country":"India"},{"Name":"Asanda Cwayi","Personal Email":"acwayi@gmail.com","Company Email":"ascw159@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"25","Client Rate":"38.46","Subscription ID":"30596","Source":"micro1","Country":"South Africa"},{"Name":"Babafemi Olayinka","Personal Email":"babafemi.olayinka@gmail.com","Company Email":"baol465@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"47","Client Rate":"72.3","Subscription ID":"30644","Source":"micro1","Country":"United States of America (the)"},{"Name":"Bahget Abdalmalek","Personal Email":"bahget@live.com","Company Email":"baab624@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"55","Client Rate":"78.57","Subscription ID":"30646","Source":"micro1","Country":"United States of America (the)"},{"Name":"Bilal Jawad","Personal Email":"mbilaljawad@gmail.com","Company Email":"bija685@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"X","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"21","Client Rate":"32.3","Subscription ID":"","Source":"sheets","Country":"Germany"},{"Name":"Christina Fredrick","Personal Email":"cbfredrick@gmail.com","Company Email":"chfr903@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"X","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"41","Client Rate":"58.57","Subscription ID":"","Source":"sheets","Country":"Australia"},{"Name":"Christina Tilus","Personal Email":"ctilus@hotmail.com","Company Email":"chti675@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30566","Source":"micro1","Country":"United States of America (the)"},{"Name":"Claudia Patricia Valenzuela Aceves","Personal Email":"claudia.valenzuela.aceves@gmail.com","Company Email":"clva300@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30002","Source":"micro1","Country":"Mexico"},{"Name":"Daisy Attieh","Personal Email":"maroundaisy@gmail.com","Company Email":"da19@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"60","Client Rate":"85.71","Subscription ID":"","Source":"sheets","Country":"United States of America (the)"},{"Name":"Daniel Jenkinson","Personal Email":"djenkinson33forapple@gmail.com","Company Email":"daje742@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"45","Client Rate":"64.28","Subscription ID":"30620","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"DANTE RUSSELL","Personal Email":"danter30@yahoo.com","Company Email":"gx1138@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"37","Client Rate":"56.92","Subscription ID":"30257","Source":"micro1","Country":""},{"Name":"Dede Lori","Personal Email":"loridede0@gmail.com","Company Email":"delo811@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30630","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Deepu Subramanian","Personal Email":"madebyheartist@gmail.com","Company Email":"desu483@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"20","Client Rate":"28.57","Subscription ID":"30572","Source":"micro1","Country":"India"},{"Name":"Dennis Karugu","Personal Email":"dennisweden2022@gmail.com","Company Email":"deka736@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"X","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"47","Client Rate":"72.3","Subscription ID":"","Source":"sheets","Country":"Sweden"},{"Name":"Diane Bass","Personal Email":"diane.bass.design@gmail.com","Company Email":"diba193@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"X","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"60","Client Rate":"85.71","Subscription ID":"","Source":"sheets","Country":"United States of America (the)"},{"Name":"Diego Castillo Itaboray","Personal Email":"itaboranius@gmail.com","Company Email":"dica476@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"45","Client Rate":"64.28","Subscription ID":"30625","Source":"micro1","Country":"Panama"},{"Name":"Dilip Mathuria","Personal Email":"dilip.mathuria@hotmail.com","Company Email":"dima131@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"21","Client Rate":"32.3","Subscription ID":"30600","Source":"micro1","Country":"Canada"},{"Name":"Doug Bailen","Personal Email":"dougbailen@gmail.com","Company Email":"gx818@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"58","Client Rate":"89.23","Subscription ID":"30260","Source":"micro1","Country":""},{"Name":"EDWIN KARIUKI","Personal Email":"edwinmwangi4@gmail.com","Company Email":"edka333@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"30","Client Rate":"42.85","Subscription ID":"30656","Source":"micro1","Country":"Kenya"},{"Name":"Elizabeth Ajayi","Personal Email":"sumbic@yahoo.com","Company Email":"elaj442@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"X","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"30","Client Rate":"42.85","Subscription ID":"","Source":"sheets","Country":"Nigeria"},{"Name":"Ellarene Cummings","Personal Email":"ellarenecummings@gmail.com","Company Email":"ec542@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"65","Client Rate":"92.85","Subscription ID":"30575","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Emilia Augusta Rego","Personal Email":"jndesenvolvimento@gmail.com","Company Email":"er278@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"21","Client Rate":"32.3","Subscription ID":"30609","Source":"micro1","Country":"Brazil"},{"Name":"Erica Switzer","Personal Email":"erica.switzer82@gmail.com","Company Email":"ersw482@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"25","Client Rate":"35.71","Subscription ID":"30638","Source":"micro1","Country":"United States of America (the)"},{"Name":"Eric Malek","Personal Email":"emalek@alumni.tufts.edu","Company Email":"erma672@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"55","Client Rate":"78.57","Subscription ID":"30635","Source":"micro1","Country":"United States of America (the)"},{"Name":"Esther Ibizugbe","Personal Email":"esta140516@gmail.com","Company Email":"esib916@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30576","Source":"micro1","Country":"Nigeria"},{"Name":"Evelyn Tatiana Vanegas Jaimes","Personal Email":"taty.jaimes111@gmail.com","Company Email":"evva968@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"31","Client Rate":"44.28","Subscription ID":"30579","Source":"micro1","Country":"El Salvador"},{"Name":"Ezekiel Eniola Alabi","Personal Email":"alabi.eniola.ezekiel@gmail.com","Company Email":"ezal009@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"25","Client Rate":"35.71","Subscription ID":"30665","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Faustine Oduol","Personal Email":"oduolfo@gmail.com","Company Email":"faod159@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30663","Source":"micro1","Country":"Kenya"},{"Name":"Femmy Lekan","Personal Email":"femiolaanalyst@gmail.com","Company Email":"feol593@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"41","Client Rate":"58.57","Subscription ID":"30005","Source":"micro1","Country":"Canada"},{"Name":"Feron McGurrin","Personal Email":"feroncm@gmail.com","Company Email":"femc110@expert.micro1.ai","Domain":"Adobecc","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30632","Source":"micro1","Country":"United States of America (the)"},{"Name":"Filiz Canbaz","Personal Email":"filizcanbazff@gmail.com","Company Email":"fica450@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"X","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"27","Client Rate":"38.57","Subscription ID":"","Source":"sheets","Country":"France"},{"Name":"Franz Tanamal","Personal Email":"franz.tanamal@gmail.com","Company Email":"frta133@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"X","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"70","Client Rate":"107.69","Subscription ID":"","Source":"sheets","Country":"Australia"},{"Name":"Gabriel Israfil de Araujo Alves","Personal Email":"gabriel.israfil.alves@gmail.com","Company Email":"gade945@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"20","Client Rate":"28.57","Subscription ID":"30615","Source":"micro1","Country":"Brazil"},{"Name":"Gbade Okegbola","Personal Email":"gbadeokegbola@gmail.com","Company Email":"gbok063@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30601","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Greicy Espinoza","Personal Email":"espinoza.greicy@gmail.com","Company Email":"gx973@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"85","Client Rate":"130.76","Subscription ID":"30258","Source":"micro1","Country":""},{"Name":"Gül Ayan","Personal Email":"ozokgul@gmail.com","Company Email":"gx908@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"85","Client Rate":"130.76","Subscription ID":"","Source":"sheets","Country":""},{"Name":"Hasna Naziya","Personal Email":"hasnanaziya26@gmail.com","Company Email":"hn02@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"45","Client Rate":"64.28","Subscription ID":"","Source":"sheets","Country":"India"},{"Name":"Holly Tapper, J.D., M.B.A.","Personal Email":"holly.a.tapper@gmail.com","Company Email":"ht05@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"29","Client Rate":"41.42","Subscription ID":"","Source":"sheets","Country":"United States of America (the)"},{"Name":"Illia Pavliuk","Personal Email":"hf.jess@gmail.com","Company Email":"ilpa282@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"27","Client Rate":"38.57","Subscription ID":"30000","Source":"micro1","Country":"Ireland"},{"Name":"Imemfon Collins","Personal Email":"imemfoncollins@gmail.com","Company Email":"imco545@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30653","Source":"micro1","Country":"Nigeria"},{"Name":"Innocent Ogbonna","Personal Email":"ocinnox@gmail.com","Company Email":"inog726@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"30","Client Rate":"42.85","Subscription ID":"29995","Source":"micro1","Country":"Nigeria"},{"Name":"Jagadeesh Bingi","Personal Email":"jagadeesh8500@gmail.com","Company Email":"gx912@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"25","Client Rate":"38.46","Subscription ID":"29987","Source":"micro1","Country":""},{"Name":"Janette Špilaak","Personal Email":"janettespilak@gmail.com","Company Email":"japi344@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"X","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"65","Client Rate":"92.85","Subscription ID":"30639","Source":"micro1","Country":"Slovenia"},{"Name":"Janvi Bamania","Personal Email":"janvibamania17@gmail.com","Company Email":"jaba264@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"25","Client Rate":"35.71","Subscription ID":"","Source":"sheets","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Jarred Cornelissen","Personal Email":"cornelissenjarred@gmail.com","Company Email":"jaco870@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30626","Source":"micro1","Country":"Viet Nam"},{"Name":"Jean Desire Habiyambere","Personal Email":"jeandesire.habiyambere1@gmail.com","Company Email":"jeha997@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"60","Client Rate":"85.71","Subscription ID":"30651","Source":"micro1","Country":"Rwanda"},{"Name":"Jeffrey Frank","Personal Email":"jf@argosadvisory.net","Company Email":"jefr825@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30001","Source":"micro1","Country":"United States of America (the)"},{"Name":"Jenny Farrell","Personal Email":"jennyfarrell0226@gmail.com","Company Email":"jefa829@expert.micro1.ai","Domain":"Adobecc","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"20","Client Rate":"30.76","Subscription ID":"30590","Source":"micro1","Country":"Ireland"},{"Name":"Jephthah Aina","Personal Email":"jephthahaina@gmail.com","Company Email":"jeai109@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"12","Client Rate":"17.14","Subscription ID":"29999","Source":"micro1","Country":"Nigeria"},{"Name":"Jeremy Verhey","Personal Email":"jeremy@verheygroup.com.au","Company Email":"gx1127@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"74","Client Rate":"113.84","Subscription ID":"29983","Source":"micro1","Country":""},{"Name":"Joff Mills","Personal Email":"joff.mills@gmail.com","Company Email":"jomi254@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"29992","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Jokin Auzmendi","Personal Email":"auzmendijokin@gmail.com","Company Email":"joau864@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"25","Client Rate":"35.71","Subscription ID":"30567","Source":"micro1","Country":"Australia"},{"Name":"Jonathan Einav","Personal Email":"jonathan.einav@gmail.com","Company Email":"je14@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"58","Client Rate":"82.85","Subscription ID":"","Source":"sheets","Country":"United States of America (the)"},{"Name":"Josephine Cabrera","Personal Email":"josephinecabrera.94@gmail.com","Company Email":"joca283@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30612","Source":"micro1","Country":"Australia"},{"Name":"Joshua Hartwell","Personal Email":"joshhartwell42@gmail.com","Company Email":"joha089@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"25","Client Rate":"35.71","Subscription ID":"30631","Source":"micro1","Country":"United States of America (the)"},{"Name":"Joyce Kigoko","Personal Email":"kigokoj3@gmail.com","Company Email":"joki478@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"47","Client Rate":"67.14","Subscription ID":"30573","Source":"micro1","Country":"Kenya"},{"Name":"Juan Gutierrez","Personal Email":"guti.xsj@gmail.com","Company Email":"jugu387@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Callisto","Not On Slack":"","HDM":"Marian Osaro","Role":"trainer","Pay Rate":"45","Client Rate":"64.28","Subscription ID":"30603","Source":"micro1","Country":"Nicaragua"},{"Name":"Juliana Grael Lirio de Almeida","Personal Email":"juligrael@gmail.com","Company Email":"jugr379@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30666","Source":"micro1","Country":"Brazil"},{"Name":"Justin McKenzie","Personal Email":"justin@justinpossible.com","Company Email":"jm017@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"41","Client Rate":"58.57","Subscription ID":"","Source":"sheets","Country":"United States of America (the)"},{"Name":"Kathryn Dench","Personal Email":"kate@diversearticulation.com","Company Email":"kade081@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"65","Client Rate":"92.85","Subscription ID":"30640","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Kaustav Mukherjee","Personal Email":"jojofmukherjee@gmail.com","Company Email":"kamu696@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"24","Client Rate":"36.92","Subscription ID":"30655","Source":"micro1","Country":"India"},{"Name":"Keith Juvenal Judit","Personal Email":"keith.judit@gmail.com","Company Email":"keju186@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"24","Client Rate":"34.28","Subscription ID":"30662","Source":"micro1","Country":"Philippines (the)"},{"Name":"Kelvin SHANI","Personal Email":"sirnare@gmail.com","Company Email":"kesh930@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"31","Client Rate":"44.28","Subscription ID":"30649","Source":"micro1","Country":"Kenya"},{"Name":"Krrish Chhablani","Personal Email":"pgp22.krrish@spjimr.org","Company Email":"krch048@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"47","Client Rate":"72.3","Subscription ID":"30608","Source":"micro1","Country":"India"},{"Name":"Kwesi Kwofie","Personal Email":"mrkwesikwofie@gmail.com","Company Email":"kwkw356@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"50","Client Rate":"71.42","Subscription ID":"29994","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Leila Davarpanah","Personal Email":"leiladavarpanah@gmail.com","Company Email":"leda086@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"60","Client Rate":"85.71","Subscription ID":"30619","Source":"micro1","Country":"Canada"},{"Name":"Leslie Castanuela-Barnes","Personal Email":"lesliecastanuelabarnes@gmail.com","Company Email":"lc927@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30641","Source":"micro1","Country":"United States of America (the)"},{"Name":"Liberty Takawira","Personal Email":"libertytakawira@gmail.com","Company Email":"gx977@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"50","Client Rate":"76.92","Subscription ID":"29985","Source":"micro1","Country":""},{"Name":"Lindsey Lennon","Personal Email":"lindseyllennon@gmail.com","Company Email":"lile563@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"41","Client Rate":"63.07","Subscription ID":"29993","Source":"micro1","Country":"United States of America (the)"},{"Name":"Love Fehintola","Personal Email":"fehintolaloveadesola2004@gmail.com","Company Email":"lofe698@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"30","Client Rate":"42.85","Subscription ID":"30657","Source":"micro1","Country":"Nigeria"},{"Name":"Lucia Baldo","Personal Email":"lulibaldo16@gmail.com","Company Email":"luba455@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"21","Client Rate":"32.3","Subscription ID":"30668","Source":"micro1","Country":"Italy"},{"Name":"Luqman Lawal","Personal Email":"lllucmahn@gmail.com","Company Email":"lula516@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"60","Client Rate":"85.71","Subscription ID":"30588","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Margaret Cotton","Personal Email":"mcotton_98@yahoo.com","Company Email":"maco072@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"55","Client Rate":"78.57","Subscription ID":"30583","Source":"micro1","Country":"United States of America (the)"},{"Name":"Marina Suassuna","Personal Email":"suassunamarina@gmail.com","Company Email":"masu584@expert.micro1.ai","Domain":"Adobecc","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"50","Client Rate":"76.92","Subscription ID":"30652","Source":"micro1","Country":"Brazil"},{"Name":"Markus Saukkonen","Personal Email":"saukkonen@me.com","Company Email":"masa566@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"60","Client Rate":"85.71","Subscription ID":"30581","Source":"micro1","Country":"Finland"},{"Name":"Mauricio Ramirez Arango","Personal Email":"mauricioramirezarq@gmail.com","Company Email":"gx924@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"X","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"50","Client Rate":"76.92","Subscription ID":"","Source":"sheets","Country":""},{"Name":"Mayeana Kamara","Personal Email":"mayeana@gmail.com","Company Email":"maka165@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30637","Source":"micro1","Country":"United States of America (the)"},{"Name":"MD Faizan Pasha","Personal Email":"faizan.pasha20@gmail.com","Company Email":"mdpa429@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"X","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"","Source":"sheets","Country":"India"},{"Name":"Mercedes Didier Garnham","Personal Email":"mercedesdidiergarnham@gmail.com","Company Email":"medi182@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"40","Client Rate":"57.14","Subscription ID":"30629","Source":"micro1","Country":"Argentina"},{"Name":"Michal Bem","Personal Email":"michal.bem@gmail.com","Company Email":"mibe903@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"65","Client Rate":"92.85","Subscription ID":"30648","Source":"micro1","Country":"Canada"},{"Name":"Michal Brachovec","Personal Email":"michalbrachovec@seznam.cz","Company Email":"mb756@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"58","Client Rate":"82.85","Subscription ID":"30580","Source":"micro1","Country":"Czechia"},{"Name":"Michelle Aniso","Personal Email":"michelledoubra@gmail.com","Company Email":"mian548@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30661","Source":"micro1","Country":"Nigeria"},{"Name":"Michelle Browne","Personal Email":"mabrowne521@gmail.com","Company Email":"mibr419@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"35","Client Rate":"50.0","Subscription ID":"30606","Source":"micro1","Country":"United States of America (the)"},{"Name":"Michelle Villariez","Personal Email":"villariezmichelle@gmail.com","Company Email":"mivi823@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"50","Client Rate":"71.42","Subscription ID":"30650","Source":"micro1","Country":"Netherlands (Kingdom of the)"},{"Name":"Miguel Alejandro Rojas Perez","Personal Email":"di.miguelrojas343@gmail.com","Company Email":"gx927@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"40","Client Rate":"61.53","Subscription ID":"","Source":"sheets","Country":""},{"Name":"Mihir Desai","Personal Email":"adminmihir@protonmail.com","Company Email":"mide072@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"23","Client Rate":"32.85","Subscription ID":"30589","Source":"micro1","Country":"India"},{"Name":"Mihnea Vorovenci","Personal Email":"mihneavorovenci@gmail.com","Company Email":"mv875@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"44","Client Rate":"67.69","Subscription ID":"30569","Source":"micro1","Country":"Romania"},{"Name":"Miki Okilo","Personal Email":"mikiomaokilo@gmail.com","Company Email":"mo739@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"60","Client Rate":"85.71","Subscription ID":"30669","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Mitu Rose","Personal Email":"mitujroseonline@gmail.com","Company Email":"gx1132@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"30","Client Rate":"46.15","Subscription ID":"29986","Source":"micro1","Country":""},{"Name":"Mohamad Hjeij","Personal Email":"mohamad.hjeij92@gmail.com","Company Email":"mohj016@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"58","Client Rate":"82.85","Subscription ID":"30592","Source":"micro1","Country":"Spain"},{"Name":"Mohamed Ibrahim","Personal Email":"mo7amedkhateeb97@gmail.com","Company Email":"moib717@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"15","Client Rate":"21.42","Subscription ID":"30610","Source":"micro1","Country":"Egypt"},{"Name":"Mohamed Shaheedullah","Personal Email":"conifer567@outlook.com","Company Email":"mosh496@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"25","Client Rate":"35.71","Subscription ID":"29991","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Mohamed Zaid bin Mohamed Ismail","Personal Email":"aied6227@gmail.com","Company Email":"mobi218@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"13","Client Rate":"20.0","Subscription ID":"30599","Source":"micro1","Country":"Malaysia"},{"Name":"Moreen Wanjohi","Personal Email":"moreennyambura85@gmail.com","Company Email":"mowa208@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30574","Source":"micro1","Country":"Kenya"},{"Name":"Myra Nizami","Personal Email":"myra.nizami@gmail.com","Company Email":"myni768@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"50","Client Rate":"71.42","Subscription ID":"30624","Source":"micro1","Country":"United States of America (the)"},{"Name":"Nancy Sinclair","Personal Email":"nancy@nancysinclair.com","Company Email":"nasi412@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30634","Source":"micro1","Country":"United States of America (the)"},{"Name":"Nandeep Kadam","Personal Email":"nandeepvk@gmail.com","Company Email":"naka692@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30664","Source":"micro1","Country":"India"},{"Name":"Ndangnen Enock Tshidavhu","Personal Email":"etshidavhu@hotmail.com","Company Email":"gx1115@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"43","Client Rate":"66.15","Subscription ID":"30263","Source":"micro1","Country":""},{"Name":"Nicole Goulding","Personal Email":"simply.gould@gmail.com","Company Email":"nigo330@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"30","Client Rate":"42.85","Subscription ID":"30605","Source":"micro1","Country":"Canada"},{"Name":"Nmaju Noble Nmaju","Personal Email":"nmajunnmaju@gmail.com","Company Email":"nmnm521@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"25","Client Rate":"35.71","Subscription ID":"30616","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Nune Khachatryan","Personal Email":"ninevehhevenin@gmail.com","Company Email":"nukh841@expert.micro1.ai","Domain":"Adobecc","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"25","Client Rate":"35.71","Subscription ID":"29990","Source":"micro1","Country":"Netherlands (Kingdom of the)"},{"Name":"Obakoya Akinbule","Personal Email":"obakoyaakinbule@gmail.com","Company Email":"obak407@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"25","Client Rate":"35.71","Subscription ID":"30607","Source":"micro1","Country":"Nigeria"},{"Name":"Olawale Opadisi","Personal Email":"opadisi@gmail.com","Company Email":"olop604@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Europa","Not On Slack":"X","HDM":"Sebastian Valenzuela Gomez","Role":"trainer","Pay Rate":"65","Client Rate":"92.85","Subscription ID":"30598","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Olivia Maduka","Personal Email":"madukaolivia@gmail.com","Company Email":"olma119@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"25","Client Rate":"35.71","Subscription ID":"30611","Source":"micro1","Country":"Nigeria"},{"Name":"Oluwabukunmi Felix Awolola","Personal Email":"worksbyfelix@gmail.com","Company Email":"olaw302@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30647","Source":"micro1","Country":"Nigeria"},{"Name":"Oluwapelumi Michael","Personal Email":"pelumimichael001@gmail.com","Company Email":"olmi746@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"20","Client Rate":"28.57","Subscription ID":"","Source":"sheets","Country":"Nigeria"},{"Name":"Oluwatobiloba Otojare","Personal Email":"tobibanwo8@gmail.com","Company Email":"olot386@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30004","Source":"micro1","Country":"Canada"},{"Name":"Omnya Shakweer","Personal Email":"omnyashakweer@gmail.com","Company Email":"omsh581@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30643","Source":"micro1","Country":"Egypt"},{"Name":"Paolo Alquizalas","Personal Email":"alquizalaspaolo32@gmail.com","Company Email":"paal543@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"21","Client Rate":"32.3","Subscription ID":"30585","Source":"micro1","Country":"Philippines (the)"},{"Name":"Patience Maposa","Personal Email":"ppcmaposa@gmail.com","Company Email":"pama506@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"X","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"39","Client Rate":"55.71","Subscription ID":"30593","Source":"micro1","Country":"Zimbabwe"},{"Name":"Paweł Skuczyński","Personal Email":"pskuczynski02@gmail.com","Company Email":"gx938@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"35","Client Rate":"53.84","Subscription ID":"30259","Source":"micro1","Country":""},{"Name":"Rameesa Mushtaq","Personal Email":"rmufti017@gmail.com","Company Email":"ramu045@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"50","Client Rate":"71.42","Subscription ID":"30623","Source":"micro1","Country":"India"},{"Name":"Ranjini Janardhanan","Personal Email":"ranjini.janardhanan@gmail.com","Company Email":"raja618@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"X","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"45","Client Rate":"64.28","Subscription ID":"","Source":"sheets","Country":"India"},{"Name":"Ravi kiran Mattaparthi","Personal Email":"rkmattaparthi@outlook.com","Company Email":"rama959@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"60","Client Rate":"85.71","Subscription ID":"30621","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Richard Lakin","Personal Email":"richardlakin@gmail.com","Company Email":"gx943@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"83","Client Rate":"127.69","Subscription ID":"30261","Source":"micro1","Country":""},{"Name":"Robert Birch","Personal Email":"archiecollier@gmail.com","Company Email":"robi876@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"X","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"50","Client Rate":"71.42","Subscription ID":"","Source":"sheets","Country":"South Africa"},{"Name":"Romell Jaganathan","Personal Email":"romellj06@gmail.com","Company Email":"roja167@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"21","Client Rate":"32.3","Subscription ID":"30618","Source":"micro1","Country":"South Africa"},{"Name":"RONNIE MONTENEGRO","Personal Email":"montenegroronnie4@gmail.com","Company Email":"romo090@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"21","Client Rate":"32.3","Subscription ID":"30627","Source":"micro1","Country":"Philippines (the)"},{"Name":"Ruslan Slobodyanik","Personal Email":"barro112211@gmail.com","Company Email":"rs877@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"30587","Source":"micro1","Country":"Kazakhstan"},{"Name":"Ryan Soucy","Personal Email":"ryan@bullet66.com","Company Email":"ryso480@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"X","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"86","Client Rate":"132.3","Subscription ID":"","Source":"sheets","Country":"United States of America (the)"},{"Name":"Sami Gharres","Personal Email":"sami.gharres@gmail.com","Company Email":"sagh305@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"35","Client Rate":"50.0","Subscription ID":"30658","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Sarah Dooley","Personal Email":"sarah.dooley@outlook.com","Company Email":"sado465@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30604","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Sean Petersen","Personal Email":"sean.h.petersen@gmail.com","Company Email":"sepe930@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"27","Client Rate":"38.57","Subscription ID":"","Source":"sheets","Country":"South Africa"},{"Name":"Shalton Ogola","Personal Email":"shalton.ogola@gmail.com","Company Email":"shog124@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"50","Client Rate":"71.42","Subscription ID":"30570","Source":"micro1","Country":"Kenya"},{"Name":"Shanna N'Diaye","Personal Email":"shannandiaye1@gmail.com","Company Email":"shnd356@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30602","Source":"micro1","Country":"Guadeloupe"},{"Name":"Shaun Muir","Personal Email":"shaun.muirs@gmail.com","Company Email":"gx860@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"X","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"30","Client Rate":"46.15","Subscription ID":"","Source":"sheets","Country":""},{"Name":"Shivon Thadhani","Personal Email":"shivonthadhani@hotmail.com","Company Email":"shth457@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30659","Source":"micro1","Country":"United Arab Emirates (the)"},{"Name":"Smriti NAIK","Personal Email":"smriti.naik@sciencespo.fr","Company Email":"smna538@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30654","Source":"micro1","Country":"France"},{"Name":"sodiq Adesina","Personal Email":"hademerotbiggieman@gmail.com","Company Email":"soad928@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"X","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"24","Client Rate":"34.28","Subscription ID":"30571","Source":"micro1","Country":"Nigeria"},{"Name":"Sophia Ahmed","Personal Email":"sophiahmed020@gmail.com","Company Email":"soah756@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"","Source":"sheets","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Souvik Bhattacharya","Personal Email":"souvik.b@alumni.nid.edu","Company Email":"sobh986@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"60","Client Rate":"92.3","Subscription ID":"","Source":"sheets","Country":"Germany"},{"Name":"Sri Ram Soma","Personal Email":"sssriramsoma@gmail.com","Company Email":"srso438@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"16","Client Rate":"24.61","Subscription ID":"30613","Source":"micro1","Country":"India"},{"Name":"Stephanie Ainsworth","Personal Email":"stephanie.a.maass@gmail.com","Company Email":"stai341@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"51","Client Rate":"72.85","Subscription ID":"","Source":"sheets","Country":"United States of America (the)"},{"Name":"Stephen Georgieff","Personal Email":"stephengeorgieff@gmail.com","Company Email":"stge838@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"47","Client Rate":"67.14","Subscription ID":"30006","Source":"micro1","Country":"Bulgaria"},{"Name":"Swati Bandhewal","Personal Email":"swati.bandhewal@gmail.com","Company Email":"swba114@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"70","Client Rate":"100.0","Subscription ID":"30594","Source":"micro1","Country":"India"},{"Name":"Syed Ali Naqvi","Personal Email":"an@morphemestudios.com","Company Email":"gx863@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"99","Client Rate":"152.3","Subscription ID":"29982","Source":"micro1","Country":""},{"Name":"Taita Iliya","Personal Email":"iliyataita@gmail.com","Company Email":"tail825@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"15","Client Rate":"23.07","Subscription ID":"30591","Source":"micro1","Country":"Nigeria"},{"Name":"Tekla Obach","Personal Email":"obachachieng4@gmail.com","Company Email":"teob485@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"X","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"58","Client Rate":"82.85","Subscription ID":"30642","Source":"micro1","Country":"Kenya"},{"Name":"Thembelihle Zwane","Personal Email":"zwanembali59@gmail.com","Company Email":"thzw677@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"30","Client Rate":"42.85","Subscription ID":"30617","Source":"micro1","Country":"South Africa"},{"Name":"theOnlygrey Grey","Personal Email":"theonlygreystudios@gmail.com","Company Email":"thgr892@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"28","Client Rate":"43.07","Subscription ID":"30003","Source":"micro1","Country":"Nigeria"},{"Name":"Theophilus Babalola","Personal Email":"theophilusadeyinkab@gmail.com","Company Email":"thba294@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"26","Client Rate":"37.14","Subscription ID":"30595","Source":"micro1","Country":"Nigeria"},{"Name":"Thiago Macedo","Personal Email":"7hiagomp@gmail.com","Company Email":"thma613@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"32","Client Rate":"45.71","Subscription ID":"","Source":"sheets","Country":"Brazil"},{"Name":"Tijani Jimoh","Personal Email":"aaretijani01@gmail.com","Company Email":"tiji984@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"54","Client Rate":"77.14","Subscription ID":"30667","Source":"micro1","Country":"Nigeria"},{"Name":"TRANG MARIONEAUX","Personal Email":"trangstar@gmail.com","Company Email":"trma663@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"66","Client Rate":"94.28","Subscription ID":"30597","Source":"micro1","Country":"United States of America (the)"},{"Name":"Vibin George","Personal Email":"vibingeorge07@gmail.com","Company Email":"gx1102@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"X","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"50","Client Rate":"76.92","Subscription ID":"29984","Source":"micro1","Country":""},{"Name":"Vijay Parmar","Personal Email":"vijay2911992@gmail.com","Company Email":"gx867@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"X","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"115","Client Rate":"176.92","Subscription ID":"30264","Source":"micro1","Country":""},{"Name":"Villgates Pua","Personal Email":"villzpua@gmail.com","Company Email":"gx868@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"18","Client Rate":"27.69","Subscription ID":"30262","Source":"micro1","Country":""},{"Name":"Vinícius Ferreira Galvão","Personal Email":"vinifgalvao1@hotmail.com","Company Email":"vf354@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"31","Client Rate":"44.28","Subscription ID":"","Source":"sheets","Country":"Brazil"},{"Name":"Vita Vianca Tria","Personal Email":"vitavianca@gmail.com","Company Email":"vitr431@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"21","Client Rate":"30.0","Subscription ID":"","Source":"sheets","Country":"Spain"},{"Name":"Whay Ying Phuah","Personal Email":"haileypwy@gmail.com","Company Email":"whph742@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Ganymede","Not On Slack":"","HDM":"Anshuman Nayak","Role":"trainer","Pay Rate":"29","Client Rate":"41.42","Subscription ID":"","Source":"sheets","Country":"United States of America (the)"},{"Name":"Xi Stacey Zhang","Personal Email":"xistaceyzhang@gmail.com","Company Email":"xizh294@expert.micro1.ai","Domain":"MSoffice","Setup Complete":false,"Status":"Active","Pod":"Betelgeuse","Not On Slack":"","HDM":"Davinia del Campo","Role":"trainer","Pay Rate":"67","Client Rate":"95.71","Subscription ID":"30586","Source":"micro1","Country":"Canada"},{"Name":"Yanqian Shi","Personal Email":"hollis.shi@outlook.com","Company Email":"yash183@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Fomalhaut","Not On Slack":"","HDM":"Venancio Flores","Role":"trainer","Pay Rate":"35","Client Rate":"50.0","Subscription ID":"30568","Source":"micro1","Country":"United Kingdom of Great Britain and Northern Ireland (the)"},{"Name":"Yash Navadiya","Personal Email":"yashnavadiya1212@gmail.com","Company Email":"yana588@expert.micro1.ai","Domain":"","Setup Complete":false,"Status":"Active","Pod":"Draco","Not On Slack":"","HDM":"Maria Rochefel Rivera-De Ocampo","Role":"trainer","Pay Rate":"30","Client Rate":"46.15","Subscription ID":"30636","Source":"micro1","Country":"United States of America (the)"},{"Name":"Yonatan Eyob","Personal Email":"yonataneyobbb@gmail.com","Company Email":"yoey028@expert.micro1.ai","Domain":"Gsuite","Setup Complete":false,"Status":"Active","Pod":"Andromeda","Not On Slack":"","HDM":"Ankush Nayyar","Role":"trainer","Pay Rate":"50","Client Rate":"71.42","Subscription ID":"30622","Source":"micro1","Country":"United States of America (the)"}];
+const HDM_NAMES = ['Ankush Nayyar','Davinia del Campo','Marian Osaro','Maria Rochefel Rivera-De Ocampo','Sebastian Valenzuela Gomez','Venancio Flores','Anshuman Nayak'];
+const INITIAL_DATA = [{"Name": "Aafes Thairu", "Personal Email": "aafes.thairu@gmail.com", "Company Email": "aath142@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "17", "Client Rate": "24.28", "Subscription ID": "30614", "Source": "micro1", "Country": "Kenya"}, {"Name": "Abbas Abubakar", "Personal Email": "abmattex@gmail.com", "Company Email": "abab119@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30582", "Source": "micro1", "Country": "Nigeria"}, {"Name": "ABDULROQEEB ARIWOOLA", "Personal Email": "ariwoolaabdulroqeeb@gmail.com", "Company Email": "aa363@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30670", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Abolarinwa Sodipo", "Personal Email": "sodipo.ea01@gmail.com", "Company Email": "abso082@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "40", "Client Rate": "57.14", "Subscription ID": "30671", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Ahmad Tawfiq Ahmed Jundi", "Personal Email": "ahmadjundi19972999@gmail.com", "Company Email": "ahju517@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "19", "Client Rate": "29.23", "Subscription ID": "29998", "Source": "micro1", "Country": "T\u00fcrkiye"}, {"Name": "Ahmed ElMokaddem", "Personal Email": "ahmed.elmokaddem@yahoo.com", "Company Email": "ahel872@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "58", "Client Rate": "82.85", "Subscription ID": "29996", "Source": "micro1", "Country": "Czechia"}, {"Name": "Akanksha Kajal", "Personal Email": "kajalaksh8@gmail.com", "Company Email": "akka279@expert.micro1.ai", "Domain": "Adobecc", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "30", "Client Rate": "42.85", "Subscription ID": "30645", "Source": "micro1", "Country": "India"}, {"Name": "Aline Magno", "Personal Email": "alinelmm@gmail.com", "Company Email": "alma574@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "65", "Client Rate": "92.85", "Subscription ID": "30578", "Source": "micro1", "Country": "Brazil"}, {"Name": "Andrea Venegas Zeledon", "Personal Email": "avenegaszeledon@gmail.com", "Company Email": "anve385@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "28", "Client Rate": "40", "Subscription ID": "30584", "Source": "micro1", "Country": "Costa Rica"}, {"Name": "Andrew Paul", "Personal Email": "computingconsultancy@andrewpaul.co", "Company Email": "anpa049@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30628", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Ankit handa", "Personal Email": "ankithanda2009@gmail.com", "Company Email": "anha740@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "29997", "Source": "micro1", "Country": "Germany"}, {"Name": "Annabelle Adams", "Personal Email": "sailor3688ann@gmail.com", "Company Email": "anad921@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "24", "Client Rate": "34.28", "Subscription ID": "30577", "Source": "micro1", "Country": "Germany"}, {"Name": "Antonella Grossolano", "Personal Email": "anto.grossolano@gmail.com", "Company Email": "ag101@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "50", "Client Rate": "71.42", "Subscription ID": "30660", "Source": "micro1", "Country": "Spain"}, {"Name": "Aritra Chatterjee", "Personal Email": "aritra1807@gmail.com", "Company Email": "arch714@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "60", "Client Rate": "85.71", "Subscription ID": "30633", "Source": "micro1", "Country": "India"}, {"Name": "Arshad Ali", "Personal Email": "arshadali2006@gmail.com", "Company Email": "aral740@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "X", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "28", "Client Rate": "43.07", "Subscription ID": "", "Source": "sheets", "Country": "India"}, {"Name": "Asanda Cwayi", "Personal Email": "acwayi@gmail.com", "Company Email": "ascw159@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "25", "Client Rate": "38.46", "Subscription ID": "30596", "Source": "micro1", "Country": "South Africa"}, {"Name": "Babafemi Olayinka", "Personal Email": "babafemi.olayinka@gmail.com", "Company Email": "baol465@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "47", "Client Rate": "72.3", "Subscription ID": "30644", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Bahget Abdalmalek", "Personal Email": "bahget@live.com", "Company Email": "baab624@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "55", "Client Rate": "78.57", "Subscription ID": "30646", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Bilal Jawad", "Personal Email": "mbilaljawad@gmail.com", "Company Email": "bija685@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "X", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "21", "Client Rate": "32.3", "Subscription ID": "", "Source": "sheets", "Country": "Germany"}, {"Name": "Christina Fredrick", "Personal Email": "cbfredrick@gmail.com", "Company Email": "chfr903@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "X", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "41", "Client Rate": "58.57", "Subscription ID": "", "Source": "sheets", "Country": "Australia"}, {"Name": "Christina Tilus", "Personal Email": "ctilus@hotmail.com", "Company Email": "chti675@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30566", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Claudia Patricia Valenzuela Aceves", "Personal Email": "claudia.valenzuela.aceves@gmail.com", "Company Email": "clva300@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30002", "Source": "micro1", "Country": "Mexico"}, {"Name": "Daisy Attieh", "Personal Email": "maroundaisy@gmail.com", "Company Email": "da19@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "60", "Client Rate": "85.71", "Subscription ID": "", "Source": "sheets", "Country": "United States of America (the)"}, {"Name": "Daniel Jenkinson", "Personal Email": "djenkinson33forapple@gmail.com", "Company Email": "daje742@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "45", "Client Rate": "64.28", "Subscription ID": "30620", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "DANTE RUSSELL", "Personal Email": "danter30@yahoo.com", "Company Email": "gx1138@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "37", "Client Rate": "56.92", "Subscription ID": "30257", "Source": "micro1", "Country": ""}, {"Name": "Dede Lori", "Personal Email": "loridede0@gmail.com", "Company Email": "delo811@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30630", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Deepu Subramanian", "Personal Email": "madebyheartist@gmail.com", "Company Email": "desu483@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "20", "Client Rate": "28.57", "Subscription ID": "30572", "Source": "micro1", "Country": "India"}, {"Name": "Dennis Karugu", "Personal Email": "dennisweden2022@gmail.com", "Company Email": "deka736@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "X", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "47", "Client Rate": "72.3", "Subscription ID": "", "Source": "sheets", "Country": "Sweden"}, {"Name": "Diane Bass", "Personal Email": "diane.bass.design@gmail.com", "Company Email": "diba193@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "X", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "60", "Client Rate": "85.71", "Subscription ID": "", "Source": "sheets", "Country": "United States of America (the)"}, {"Name": "Diego Castillo Itaboray", "Personal Email": "itaboranius@gmail.com", "Company Email": "dica476@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "45", "Client Rate": "64.28", "Subscription ID": "30625", "Source": "micro1", "Country": "Panama"}, {"Name": "Dilip Mathuria", "Personal Email": "dilip.mathuria@hotmail.com", "Company Email": "dima131@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "21", "Client Rate": "32.3", "Subscription ID": "30600", "Source": "micro1", "Country": "Canada"}, {"Name": "Doug Bailen", "Personal Email": "dougbailen@gmail.com", "Company Email": "gx818@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "58", "Client Rate": "89.23", "Subscription ID": "30260", "Source": "micro1", "Country": ""}, {"Name": "EDWIN KARIUKI", "Personal Email": "edwinmwangi4@gmail.com", "Company Email": "edka333@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "30", "Client Rate": "42.85", "Subscription ID": "30656", "Source": "micro1", "Country": "Kenya"}, {"Name": "Elizabeth Ajayi", "Personal Email": "sumbic@yahoo.com", "Company Email": "elaj442@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "X", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "30", "Client Rate": "42.85", "Subscription ID": "", "Source": "sheets", "Country": "Nigeria"}, {"Name": "Ellarene Cummings", "Personal Email": "ellarenecummings@gmail.com", "Company Email": "ec542@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "65", "Client Rate": "92.85", "Subscription ID": "30575", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Emilia Augusta Rego", "Personal Email": "jndesenvolvimento@gmail.com", "Company Email": "er278@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "21", "Client Rate": "32.3", "Subscription ID": "30609", "Source": "micro1", "Country": "Brazil"}, {"Name": "Erica Switzer", "Personal Email": "erica.switzer82@gmail.com", "Company Email": "ersw482@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "25", "Client Rate": "35.71", "Subscription ID": "30638", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Eric Malek", "Personal Email": "emalek@alumni.tufts.edu", "Company Email": "erma672@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "55", "Client Rate": "78.57", "Subscription ID": "30635", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Esther Ibizugbe", "Personal Email": "esta140516@gmail.com", "Company Email": "esib916@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30576", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Evelyn Tatiana Vanegas Jaimes", "Personal Email": "taty.jaimes111@gmail.com", "Company Email": "evva968@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "31", "Client Rate": "44.28", "Subscription ID": "30579", "Source": "micro1", "Country": "El Salvador"}, {"Name": "Ezekiel Eniola Alabi", "Personal Email": "alabi.eniola.ezekiel@gmail.com", "Company Email": "ezal009@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "25", "Client Rate": "35.71", "Subscription ID": "30665", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Faustine Oduol", "Personal Email": "oduolfo@gmail.com", "Company Email": "faod159@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30663", "Source": "micro1", "Country": "Kenya"}, {"Name": "Femmy Lekan", "Personal Email": "femiolaanalyst@gmail.com", "Company Email": "feol593@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "41", "Client Rate": "58.57", "Subscription ID": "30005", "Source": "micro1", "Country": "Canada"}, {"Name": "Feron McGurrin", "Personal Email": "feroncm@gmail.com", "Company Email": "femc110@expert.micro1.ai", "Domain": "Adobecc", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30632", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Filiz Canbaz", "Personal Email": "filizcanbazff@gmail.com", "Company Email": "fica450@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "X", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "27", "Client Rate": "38.57", "Subscription ID": "", "Source": "sheets", "Country": "France"}, {"Name": "Franz Tanamal", "Personal Email": "franz.tanamal@gmail.com", "Company Email": "frta133@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "X", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "70", "Client Rate": "107.69", "Subscription ID": "", "Source": "sheets", "Country": "Australia"}, {"Name": "Gabriel Israfil de Araujo Alves", "Personal Email": "gabriel.israfil.alves@gmail.com", "Company Email": "gade945@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "20", "Client Rate": "28.57", "Subscription ID": "30615", "Source": "micro1", "Country": "Brazil"}, {"Name": "Gbade Okegbola", "Personal Email": "gbadeokegbola@gmail.com", "Company Email": "gbok063@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30601", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Greicy Espinoza", "Personal Email": "espinoza.greicy@gmail.com", "Company Email": "gx973@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "85", "Client Rate": "130.76", "Subscription ID": "30258", "Source": "micro1", "Country": ""}, {"Name": "G\u00fcl Ayan", "Personal Email": "ozokgul@gmail.com", "Company Email": "gx908@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "85", "Client Rate": "130.76", "Subscription ID": "", "Source": "sheets", "Country": ""}, {"Name": "Hasna Naziya", "Personal Email": "hasnanaziya26@gmail.com", "Company Email": "hn02@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "45", "Client Rate": "64.28", "Subscription ID": "", "Source": "sheets", "Country": "India"}, {"Name": "Holly Tapper J.D. M.B.A.", "Personal Email": "holly.a.tapper@gmail.com", "Company Email": "ht05@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "29", "Client Rate": "41.42", "Subscription ID": "", "Source": "sheets", "Country": "United States of America (the)"}, {"Name": "Illia Pavliuk", "Personal Email": "hf.jess@gmail.com", "Company Email": "ilpa282@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "27", "Client Rate": "38.57", "Subscription ID": "30000", "Source": "micro1", "Country": "Ireland"}, {"Name": "Imemfon Collins", "Personal Email": "imemfoncollins@gmail.com", "Company Email": "imco545@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30653", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Innocent Ogbonna", "Personal Email": "ocinnox@gmail.com", "Company Email": "inog726@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "30", "Client Rate": "42.85", "Subscription ID": "29995", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Jagadeesh Bingi", "Personal Email": "jagadeesh8500@gmail.com", "Company Email": "gx912@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "25", "Client Rate": "38.46", "Subscription ID": "29987", "Source": "micro1", "Country": ""}, {"Name": "Janette \u0160pilak", "Personal Email": "janettespilak@gmail.com", "Company Email": "japi344@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "X", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "65", "Client Rate": "92.85", "Subscription ID": "30639", "Source": "micro1", "Country": "Slovenia"}, {"Name": "Janvi Bamania", "Personal Email": "janvibamania17@gmail.com", "Company Email": "jaba264@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "25", "Client Rate": "35.71", "Subscription ID": "", "Source": "sheets", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Jarred Cornelissen", "Personal Email": "cornelissenjarred@gmail.com", "Company Email": "jaco870@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30626", "Source": "micro1", "Country": "Viet Nam"}, {"Name": "Jean Desire Habiyambere", "Personal Email": "jeandesire.habiyambere1@gmail.com", "Company Email": "jeha997@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "60", "Client Rate": "85.71", "Subscription ID": "30651", "Source": "micro1", "Country": "Rwanda"}, {"Name": "Jeffrey Frank", "Personal Email": "jf@argosadvisory.net", "Company Email": "jefr825@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30001", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Jenny Farrell", "Personal Email": "jennyfarrell0226@gmail.com", "Company Email": "jefa829@expert.micro1.ai", "Domain": "Adobecc", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "20", "Client Rate": "30.76", "Subscription ID": "30590", "Source": "micro1", "Country": "Ireland"}, {"Name": "Jephthah Aina", "Personal Email": "jephthahaina@gmail.com", "Company Email": "jeai109@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "12", "Client Rate": "17.14", "Subscription ID": "29999", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Jeremy Verhey", "Personal Email": "jeremy@verheygroup.com.au", "Company Email": "gx1127@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "74", "Client Rate": "113.84", "Subscription ID": "29983", "Source": "micro1", "Country": ""}, {"Name": "Joff Mills", "Personal Email": "joff.mills@gmail.com", "Company Email": "jomi254@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "29992", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Jokin Auzmendi", "Personal Email": "auzmendijokin@gmail.com", "Company Email": "joau864@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "25", "Client Rate": "35.71", "Subscription ID": "30567", "Source": "micro1", "Country": "Australia"}, {"Name": "Jonathan Einav", "Personal Email": "jonathan.einav@gmail.com", "Company Email": "je14@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "58", "Client Rate": "82.85", "Subscription ID": "", "Source": "sheets", "Country": "United States of America (the)"}, {"Name": "Josephine Cabrera", "Personal Email": "josephinecabrera.94@gmail.com", "Company Email": "joca283@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30612", "Source": "micro1", "Country": "Australia"}, {"Name": "Joshua Hartwell", "Personal Email": "joshhartwell42@gmail.com", "Company Email": "joha089@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "25", "Client Rate": "35.71", "Subscription ID": "30631", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Joyce Kigoko", "Personal Email": "kigokoj3@gmail.com", "Company Email": "joki478@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "47", "Client Rate": "67.14", "Subscription ID": "30573", "Source": "micro1", "Country": "Kenya"}, {"Name": "Juan Gutierrez", "Personal Email": "guti.xsj@gmail.com", "Company Email": "jugu387@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Callisto", "Not On Slack": "", "HDM": "Marian Osaro", "Role": "trainer", "Pay Rate": "45", "Client Rate": "64.28", "Subscription ID": "30603", "Source": "micro1", "Country": "Nicaragua"}, {"Name": "Juliana Grael Lirio de Almeida", "Personal Email": "juligrael@gmail.com", "Company Email": "jugr379@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30666", "Source": "micro1", "Country": "Brazil"}, {"Name": "Justin McKenzie", "Personal Email": "justin@justinpossible.com", "Company Email": "jm017@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "41", "Client Rate": "58.57", "Subscription ID": "", "Source": "sheets", "Country": "United States of America (the)"}, {"Name": "Kathryn Dench", "Personal Email": "kate@diversearticulation.com", "Company Email": "kade081@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "65", "Client Rate": "92.85", "Subscription ID": "30640", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Kaustav Mukherjee", "Personal Email": "jojofmukherjee@gmail.com", "Company Email": "kamu696@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "24", "Client Rate": "36.92", "Subscription ID": "30655", "Source": "micro1", "Country": "India"}, {"Name": "Keith Juvenal Judit", "Personal Email": "keith.judit@gmail.com", "Company Email": "keju186@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "24", "Client Rate": "34.28", "Subscription ID": "30662", "Source": "micro1", "Country": "Philippines (the)"}, {"Name": "Kelvin SHANI", "Personal Email": "sirnare@gmail.com", "Company Email": "kesh930@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "31", "Client Rate": "44.28", "Subscription ID": "30649", "Source": "micro1", "Country": "Kenya"}, {"Name": "Krrish Chhablani", "Personal Email": "pgp22.krrish@spjimr.org", "Company Email": "krch048@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "47", "Client Rate": "72.3", "Subscription ID": "30608", "Source": "micro1", "Country": "India"}, {"Name": "Kwesi Kwofie", "Personal Email": "mrkwesikwofie@gmail.com", "Company Email": "kwkw356@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "50", "Client Rate": "71.42", "Subscription ID": "29994", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Leila Davarpanah", "Personal Email": "leiladavarpanah@gmail.com", "Company Email": "leda086@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "60", "Client Rate": "85.71", "Subscription ID": "30619", "Source": "micro1", "Country": "Canada"}, {"Name": "Leslie Castanuela-Barnes", "Personal Email": "lesliecastanuelabarnes@gmail.com", "Company Email": "lc927@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30641", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Liberty Takawira", "Personal Email": "libertytakawira@gmail.com", "Company Email": "gx977@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "50", "Client Rate": "76.92", "Subscription ID": "29985", "Source": "micro1", "Country": ""}, {"Name": "Lindsey Lennon", "Personal Email": "lindseyllennon@gmail.com", "Company Email": "lile563@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "41", "Client Rate": "63.07", "Subscription ID": "29993", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Love Fehintola", "Personal Email": "fehintolaloveadesola2004@gmail.com", "Company Email": "lofe698@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "30", "Client Rate": "42.85", "Subscription ID": "30657", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Lucia Baldo", "Personal Email": "lulibaldo16@gmail.com", "Company Email": "luba455@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "21", "Client Rate": "32.3", "Subscription ID": "30668", "Source": "micro1", "Country": "Italy"}, {"Name": "Luqman Lawal", "Personal Email": "lllucmahn@gmail.com", "Company Email": "lula516@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "60", "Client Rate": "85.71", "Subscription ID": "30588", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Margaret Cotton", "Personal Email": "mcotton_98@yahoo.com", "Company Email": "maco072@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "55", "Client Rate": "78.57", "Subscription ID": "30583", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Marina Suassuna", "Personal Email": "suassunamarina@gmail.com", "Company Email": "masu584@expert.micro1.ai", "Domain": "Adobecc", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "50", "Client Rate": "76.92", "Subscription ID": "30652", "Source": "micro1", "Country": "Brazil"}, {"Name": "Markus Saukkonen", "Personal Email": "saukkonen@me.com", "Company Email": "masa566@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "60", "Client Rate": "85.71", "Subscription ID": "30581", "Source": "micro1", "Country": "Finland"}, {"Name": "Mauricio Ramirez Arango", "Personal Email": "mauricioramirezarq@gmail.com", "Company Email": "gx924@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "X", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "50", "Client Rate": "76.92", "Subscription ID": "", "Source": "sheets", "Country": ""}, {"Name": "Mayeana Kamara", "Personal Email": "mayeana@gmail.com", "Company Email": "maka165@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30637", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "MD Faizan Pasha", "Personal Email": "faizan.pasha20@gmail.com", "Company Email": "mdpa429@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "X", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "", "Source": "sheets", "Country": "India"}, {"Name": "Mercedes Didier Garnham", "Personal Email": "mercedesdidiergarnham@gmail.com", "Company Email": "medi182@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "40", "Client Rate": "57.14", "Subscription ID": "30629", "Source": "micro1", "Country": "Argentina"}, {"Name": "Mercedes Didier Garnham", "Personal Email": "mdidiergarnham@iib.unsam.edu.ar", "Company Email": "medi245@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "40", "Client Rate": "57.14", "Subscription ID": "", "Source": "sheets", "Country": "Argentina"}, {"Name": "Michal Bem", "Personal Email": "michal.bem@gmail.com", "Company Email": "mibe903@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "65", "Client Rate": "92.85", "Subscription ID": "30648", "Source": "micro1", "Country": "Canada"}, {"Name": "Michal Brachovec", "Personal Email": "michalbrachovec@seznam.cz", "Company Email": "mb756@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "58", "Client Rate": "82.85", "Subscription ID": "30580", "Source": "micro1", "Country": "Czechia"}, {"Name": "Michelle Aniso", "Personal Email": "michelledoubra@gmail.com", "Company Email": "mian548@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30661", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Michelle Browne", "Personal Email": "mabrowne521@gmail.com", "Company Email": "mibr419@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "35", "Client Rate": "50", "Subscription ID": "30606", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Michelle Villariez", "Personal Email": "villariezmichelle@gmail.com", "Company Email": "mivi823@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "50", "Client Rate": "71.42", "Subscription ID": "30650", "Source": "micro1", "Country": "Netherlands (Kingdom of the)"}, {"Name": "Miguel Alejandro Rojas Perez", "Personal Email": "di.miguelrojas343@gmail.com", "Company Email": "gx927@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "40", "Client Rate": "61.53", "Subscription ID": "", "Source": "sheets", "Country": ""}, {"Name": "Mihir Desai", "Personal Email": "adminmihir@protonmail.com", "Company Email": "mide072@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "23", "Client Rate": "32.85", "Subscription ID": "30589", "Source": "micro1", "Country": "India"}, {"Name": "Mihnea Vorovenci", "Personal Email": "mihneavorovenci@gmail.com", "Company Email": "mv875@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "44", "Client Rate": "67.69", "Subscription ID": "30569", "Source": "micro1", "Country": "Romania"}, {"Name": "Miki Okilo", "Personal Email": "mikiomaokilo@gmail.com", "Company Email": "mo739@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "60", "Client Rate": "85.71", "Subscription ID": "30669", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Mitu Rose", "Personal Email": "mitujroseonline@gmail.com", "Company Email": "gx1132@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "30", "Client Rate": "46.15", "Subscription ID": "29986", "Source": "micro1", "Country": ""}, {"Name": "Mohamad Hjeij", "Personal Email": "mohamad.hjeij92@gmail.com", "Company Email": "mohj016@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "58", "Client Rate": "82.85", "Subscription ID": "30592", "Source": "micro1", "Country": "Spain"}, {"Name": "Mohamed Ibrahim", "Personal Email": "mo7amedkhateeb97@gmail.com", "Company Email": "moib717@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "15", "Client Rate": "21.42", "Subscription ID": "30610", "Source": "micro1", "Country": "Egypt"}, {"Name": "Mohamed Shaheedullah", "Personal Email": "conifer567@outlook.com", "Company Email": "mosh496@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "25", "Client Rate": "35.71", "Subscription ID": "29991", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Mohamed Zaid bin Mohamed Ismail", "Personal Email": "aied6227@gmail.com", "Company Email": "mobi218@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "13", "Client Rate": "20", "Subscription ID": "30599", "Source": "micro1", "Country": "Malaysia"}, {"Name": "Moreen Wanjohi", "Personal Email": "moreennyambura85@gmail.com", "Company Email": "mowa208@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30574", "Source": "micro1", "Country": "Kenya"}, {"Name": "Myra Nizami", "Personal Email": "myra.nizami@gmail.com", "Company Email": "myni768@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "50", "Client Rate": "71.42", "Subscription ID": "30624", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Nancy Sinclair", "Personal Email": "nancy@nancysinclair.com", "Company Email": "nasi412@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30634", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Nandeep Kadam", "Personal Email": "nandeepvk@gmail.com", "Company Email": "naka692@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30664", "Source": "micro1", "Country": "India"}, {"Name": "Ndangnen Enock Tshidavhu", "Personal Email": "etshidavhu@hotmail.com", "Company Email": "gx1115@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "43", "Client Rate": "66.15", "Subscription ID": "30263", "Source": "micro1", "Country": ""}, {"Name": "Nicole Goulding", "Personal Email": "simply.gould@gmail.com", "Company Email": "nigo330@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "30", "Client Rate": "42.85", "Subscription ID": "30605", "Source": "micro1", "Country": "Canada"}, {"Name": "Nmaju Noble Nmaju", "Personal Email": "nmajunnmaju@gmail.com", "Company Email": "nmnm521@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "25", "Client Rate": "35.71", "Subscription ID": "30616", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Nune Khachatryan", "Personal Email": "ninevehhevenin@gmail.com", "Company Email": "nukh841@expert.micro1.ai", "Domain": "Adobecc", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "25", "Client Rate": "35.71", "Subscription ID": "29990", "Source": "micro1", "Country": "Netherlands (Kingdom of the)"}, {"Name": "Obakoya Akinbule", "Personal Email": "obakoyaakinbule@gmail.com", "Company Email": "obak407@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "25", "Client Rate": "35.71", "Subscription ID": "30607", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Olawale Opadisi", "Personal Email": "opadisi@gmail.com", "Company Email": "olop604@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Europa", "Not On Slack": "X", "HDM": "Sebastian Valenzuela Gomez", "Role": "trainer", "Pay Rate": "65", "Client Rate": "92.85", "Subscription ID": "30598", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Olivia Maduka", "Personal Email": "madukaolivia@gmail.com", "Company Email": "olma119@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "25", "Client Rate": "35.71", "Subscription ID": "30611", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Oluwabukunmi Felix Awolola", "Personal Email": "worksbyfelix@gmail.com", "Company Email": "olaw302@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30647", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Oluwapelumi Michael", "Personal Email": "pelumimichael001@gmail.com", "Company Email": "olmi746@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "20", "Client Rate": "28.57", "Subscription ID": "", "Source": "sheets", "Country": "Nigeria"}, {"Name": "Oluwatobiloba Otojare", "Personal Email": "tobibanwo8@gmail.com", "Company Email": "olot386@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30004", "Source": "micro1", "Country": "Canada"}, {"Name": "Omnya Shakweer", "Personal Email": "omnyashakweer@gmail.com", "Company Email": "omsh581@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30643", "Source": "micro1", "Country": "Egypt"}, {"Name": "Paolo Alquizalas", "Personal Email": "alquizalaspaolo32@gmail.com", "Company Email": "paal543@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "21", "Client Rate": "32.3", "Subscription ID": "30585", "Source": "micro1", "Country": "Philippines (the)"}, {"Name": "Patience Maposa", "Personal Email": "ppcmaposa@gmail.com", "Company Email": "pama506@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "X", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "39", "Client Rate": "55.71", "Subscription ID": "30593", "Source": "micro1", "Country": "Zimbabwe"}, {"Name": "Pawe\u0142 Skuczy\u0144ski", "Personal Email": "pskuczynski02@gmail.com", "Company Email": "gx938@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "35", "Client Rate": "53.84", "Subscription ID": "30259", "Source": "micro1", "Country": ""}, {"Name": "Rameesa Mushtaq", "Personal Email": "rmufti017@gmail.com", "Company Email": "ramu045@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "50", "Client Rate": "71.42", "Subscription ID": "30623", "Source": "micro1", "Country": "India"}, {"Name": "Ranjini Janardhanan", "Personal Email": "ranjini.janardhanan@gmail.com", "Company Email": "raja618@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "X", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "45", "Client Rate": "64.28", "Subscription ID": "", "Source": "sheets", "Country": "India"}, {"Name": "Ravi kiran Mattaparthi", "Personal Email": "rkmattaparthi@outlook.com", "Company Email": "rama959@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "60", "Client Rate": "85.71", "Subscription ID": "30621", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Richard Lakin", "Personal Email": "richardlakin@gmail.com", "Company Email": "gx943@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "83", "Client Rate": "127.69", "Subscription ID": "30261", "Source": "micro1", "Country": ""}, {"Name": "Robert Birch", "Personal Email": "archiecollier@gmail.com", "Company Email": "robi876@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "X", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "50", "Client Rate": "71.42", "Subscription ID": "", "Source": "sheets", "Country": "South Africa"}, {"Name": "Romell Jaganathan", "Personal Email": "romellj06@gmail.com", "Company Email": "roja167@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "21", "Client Rate": "32.3", "Subscription ID": "30618", "Source": "micro1", "Country": "South Africa"}, {"Name": "RONNIE MONTENEGRO", "Personal Email": "montenegroronnie4@gmail.com", "Company Email": "romo090@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "21", "Client Rate": "32.3", "Subscription ID": "30627", "Source": "micro1", "Country": "Philippines (the)"}, {"Name": "Ruslan Slobodyanik", "Personal Email": "barro112211@gmail.com", "Company Email": "rs877@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "30587", "Source": "micro1", "Country": "Kazakhstan"}, {"Name": "Ryan Soucy", "Personal Email": "ryan@bullet66.com", "Company Email": "ryso480@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "X", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "86", "Client Rate": "132.3", "Subscription ID": "", "Source": "sheets", "Country": "United States of America (the)"}, {"Name": "Sami Gharres", "Personal Email": "sami.gharres@gmail.com", "Company Email": "sagh305@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "35", "Client Rate": "50", "Subscription ID": "30658", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Sarah Dooley", "Personal Email": "sarah.dooley@outlook.com", "Company Email": "sado465@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30604", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Sean Petersen", "Personal Email": "sean.h.petersen@gmail.com", "Company Email": "sepe930@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "27", "Client Rate": "38.57", "Subscription ID": "", "Source": "sheets", "Country": "South Africa"}, {"Name": "Shalton Ogola", "Personal Email": "shalton.ogola@gmail.com", "Company Email": "shog124@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "50", "Client Rate": "71.42", "Subscription ID": "30570", "Source": "micro1", "Country": "Kenya"}, {"Name": "Shanna N'Diaye", "Personal Email": "shannandiaye1@gmail.com", "Company Email": "shnd356@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30602", "Source": "micro1", "Country": "Guadeloupe"}, {"Name": "Shaun Muir", "Personal Email": "shaun.muirs@gmail.com", "Company Email": "gx860@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "X", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "30", "Client Rate": "46.15", "Subscription ID": "", "Source": "sheets", "Country": ""}, {"Name": "Shivon Thadhani", "Personal Email": "shivonthadhani@hotmail.com", "Company Email": "shth457@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30659", "Source": "micro1", "Country": "United Arab Emirates (the)"}, {"Name": "Smriti NAIK", "Personal Email": "smriti.naik@sciencespo.fr", "Company Email": "smna538@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30654", "Source": "micro1", "Country": "France"}, {"Name": "sodiq Adesina", "Personal Email": "hademerotbiggieman@gmail.com", "Company Email": "soad928@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "X", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "24", "Client Rate": "34.28", "Subscription ID": "30571", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Sophia Ahmed", "Personal Email": "sophiahmed020@gmail.com", "Company Email": "soah756@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "", "Source": "sheets", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Souvik Bhattacharya", "Personal Email": "souvik.b@alumni.nid.edu", "Company Email": "sobh986@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "60", "Client Rate": "92.3", "Subscription ID": "", "Source": "sheets", "Country": "Germany"}, {"Name": "Sri Ram Soma", "Personal Email": "sssriramsoma@gmail.com", "Company Email": "srso438@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "16", "Client Rate": "24.61", "Subscription ID": "30613", "Source": "micro1", "Country": "India"}, {"Name": "Stephanie Ainsworth", "Personal Email": "stephanie.a.maass@gmail.com", "Company Email": "stai341@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "51", "Client Rate": "72.85", "Subscription ID": "", "Source": "sheets", "Country": "United States of America (the)"}, {"Name": "Stephen Georgieff", "Personal Email": "stephengeorgieff@gmail.com", "Company Email": "stge838@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "47", "Client Rate": "67.14", "Subscription ID": "30006", "Source": "micro1", "Country": "Bulgaria"}, {"Name": "Swati Bandhewal", "Personal Email": "swati.bandhewal@gmail.com", "Company Email": "swba114@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "70", "Client Rate": "100", "Subscription ID": "30594", "Source": "micro1", "Country": "India"}, {"Name": "Syed Ali Naqvi", "Personal Email": "an@morphemestudios.com", "Company Email": "gx863@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "99", "Client Rate": "152.3", "Subscription ID": "29982", "Source": "micro1", "Country": ""}, {"Name": "Taita Iliya", "Personal Email": "iliyataita@gmail.com", "Company Email": "tail825@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "15", "Client Rate": "23.07", "Subscription ID": "30591", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Tekla Obach", "Personal Email": "obachachieng4@gmail.com", "Company Email": "teob485@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "X", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "58", "Client Rate": "82.85", "Subscription ID": "30642", "Source": "micro1", "Country": "Kenya"}, {"Name": "Thembelihle Zwane", "Personal Email": "zwanembali59@gmail.com", "Company Email": "thzw677@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "30", "Client Rate": "42.85", "Subscription ID": "30617", "Source": "micro1", "Country": "South Africa"}, {"Name": "theOnlygrey Grey", "Personal Email": "theonlygreystudios@gmail.com", "Company Email": "thgr892@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "28", "Client Rate": "43.07", "Subscription ID": "30003", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Theophilus Babalola", "Personal Email": "theophilusadeyinkab@gmail.com", "Company Email": "thba294@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "26", "Client Rate": "37.14", "Subscription ID": "30595", "Source": "micro1", "Country": "Nigeria"}, {"Name": "Thiago Macedo", "Personal Email": "7hiagomp@gmail.com", "Company Email": "thma613@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "32", "Client Rate": "45.71", "Subscription ID": "", "Source": "sheets", "Country": "Brazil"}, {"Name": "Tijani Jimoh", "Personal Email": "aaretijani01@gmail.com", "Company Email": "tiji984@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "54", "Client Rate": "77.14", "Subscription ID": "30667", "Source": "micro1", "Country": "Nigeria"}, {"Name": "TRANG MARIONEAUX", "Personal Email": "trangstar@gmail.com", "Company Email": "trma663@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "66", "Client Rate": "94.28", "Subscription ID": "30597", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Vibin George", "Personal Email": "vibingeorge07@gmail.com", "Company Email": "gx1102@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "X", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "50", "Client Rate": "76.92", "Subscription ID": "29984", "Source": "micro1", "Country": ""}, {"Name": "Vijay Parmar", "Personal Email": "vijay2911992@gmail.com", "Company Email": "gx867@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "X", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "115", "Client Rate": "176.92", "Subscription ID": "30264", "Source": "micro1", "Country": ""}, {"Name": "Villgates Pua", "Personal Email": "villzpua@gmail.com", "Company Email": "gx868@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "18", "Client Rate": "27.69", "Subscription ID": "30262", "Source": "micro1", "Country": ""}, {"Name": "Vin\u00edcius Ferreira Galv\u00e3o", "Personal Email": "vinifgalvao1@hotmail.com", "Company Email": "vf354@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "31", "Client Rate": "44.28", "Subscription ID": "", "Source": "sheets", "Country": "Brazil"}, {"Name": "Vita Vianca Tria", "Personal Email": "vitavianca@gmail.com", "Company Email": "vitr431@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "21", "Client Rate": "30", "Subscription ID": "", "Source": "sheets", "Country": "Spain"}, {"Name": "Whay Ying Phuah", "Personal Email": "haileypwy@gmail.com", "Company Email": "whph742@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Ganymede", "Not On Slack": "", "HDM": "Anshuman Nayak", "Role": "trainer", "Pay Rate": "29", "Client Rate": "41.42", "Subscription ID": "", "Source": "sheets", "Country": "United States of America (the)"}, {"Name": "Xi Stacey Zhang", "Personal Email": "xistaceyzhang@gmail.com", "Company Email": "xizh294@expert.micro1.ai", "Domain": "MSoffice", "Setup Complete": false, "Status": "Active", "Pod": "Betelgeuse", "Not On Slack": "", "HDM": "Davinia del Campo", "Role": "trainer", "Pay Rate": "67", "Client Rate": "95.71", "Subscription ID": "30586", "Source": "micro1", "Country": "Canada"}, {"Name": "Yanqian Shi", "Personal Email": "hollis.shi@outlook.com", "Company Email": "yash183@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Fomalhaut", "Not On Slack": "", "HDM": "Venancio Flores", "Role": "trainer", "Pay Rate": "35", "Client Rate": "50", "Subscription ID": "30568", "Source": "micro1", "Country": "United Kingdom of Great Britain and Northern Ireland (the)"}, {"Name": "Yash Navadiya", "Personal Email": "yashnavadiya1212@gmail.com", "Company Email": "yana588@expert.micro1.ai", "Domain": "", "Setup Complete": false, "Status": "Active", "Pod": "Draco", "Not On Slack": "", "HDM": "Maria Rochefel Rivera-De Ocampo", "Role": "trainer", "Pay Rate": "30", "Client Rate": "46.15", "Subscription ID": "30636", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "Yonatan Eyob", "Personal Email": "yonataneyobbb@gmail.com", "Company Email": "yoey028@expert.micro1.ai", "Domain": "Gsuite", "Setup Complete": false, "Status": "Active", "Pod": "Andromeda", "Not On Slack": "", "HDM": "Ankush Nayyar", "Role": "trainer", "Pay Rate": "50", "Client Rate": "71.42", "Subscription ID": "30622", "Source": "micro1", "Country": "United States of America (the)"}, {"Name": "", "Personal Email": "", "Company Email": "", "Domain": "", "Setup Complete": false, "Status": "", "Pod": "", "Not On Slack": "", "HDM": "", "Role": "", "Pay Rate": "", "Client Rate": "", "Subscription ID": "", "Source": "", "Country": ""}];
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let data = [];
 let filteredIndices = [];
 let changelog = [];
 let scriptUrl = localStorage.getItem('script_url') || '';
-let pendingRawData = null;
+let pendingUploadData = null;
+let uploadMode = 'raw'; // 'raw' or 'base'
 let sortCol = 'Name', sortAsc = true;
+
+// ─── PASSWORD ─────────────────────────────────────────────────────────────────
+function checkPassword() {
+  if (document.getElementById('pw-input').value === APP_PASSWORD) {
+    sessionStorage.setItem('huma_auth','1');
+    document.getElementById('pw-screen').style.display = 'none';
+    document.getElementById('app-wrap').style.display = 'flex';
+  } else {
+    document.getElementById('pw-error').textContent = 'Incorrect password. Try again.';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+if (sessionStorage.getItem('huma_auth') === '1') {
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('app-wrap').style.display = 'flex';
+}
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 async function init() {
@@ -392,12 +317,11 @@ async function init() {
   await loadData();
   renderTable();
   updateStats();
-  if (scriptUrl) updateSyncStatus('connected', 'Connected');
 }
 
 function buildHeader() {
   const tr = document.createElement('tr');
-  tr.innerHTML = `<th style="min-width:36px;">#</th>` +
+  tr.innerHTML = '<th style="min-width:36px;">#</th>' +
     COLUMNS.map(c => `<th class="sortable" style="min-width:${c.width}px;" data-key="${c.key}" onclick="sortBy('${c.key}')">${c.label} <span class="sort-arrow ${sortCol===c.key?'active':''}">${sortCol===c.key?(sortAsc?'↑':'↓'):'↕'}</span></th>`).join('');
   document.getElementById('table-head').appendChild(tr);
 }
@@ -407,49 +331,50 @@ function buildFilters() {
   const pods = [...new Set(INITIAL_DATA.map(r=>r.Pod).filter(Boolean))].sort();
   const hdmSel = document.getElementById('filter-hdm');
   const podSel = document.getElementById('filter-pod');
-  hdms.forEach(h => { const o = document.createElement('option'); o.value=h; o.textContent=h; hdmSel.appendChild(o); });
-  pods.forEach(p => { const o = document.createElement('option'); o.value=p; o.textContent=p; podSel.appendChild(o); });
+  hdms.forEach(h => { const o=document.createElement('option'); o.value=h; o.textContent=h; hdmSel.appendChild(o); });
+  pods.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; podSel.appendChild(o); });
 }
 
 async function loadData() {
   if (scriptUrl) {
     try {
-      updateSyncStatus('syncing', 'Loading...');
+      updateSyncStatus('syncing','Loading...');
       const res = await fetch(scriptUrl + '?action=get');
       const json = await res.json();
       if (json.data && json.data.length > 0) {
         data = json.data;
-        updateSyncStatus('connected', 'Synced ' + new Date().toLocaleTimeString());
+        updateSyncStatus('connected','Synced ' + new Date().toLocaleTimeString());
         return;
       }
-    } catch(e) {
-      updateSyncStatus('error', 'Offline — using local data');
-    }
+    } catch(e) { updateSyncStatus('error','Offline — using local data'); }
   }
   data = JSON.parse(JSON.stringify(INITIAL_DATA));
-  updateSyncStatus('', 'Local data (not connected)');
+  updateSyncStatus('','Local data (not connected)');
 }
 
 async function saveData() {
   if (!scriptUrl) return;
   try {
-    updateSyncStatus('syncing', 'Saving...');
-    // Use GET + encoded payload to avoid CORS preflight blocking
+    updateSyncStatus('syncing','Saving...');
     const payload = encodeURIComponent(JSON.stringify({ data }));
-    const url = scriptUrl + '?action=set&payload=' + payload;
-    const res = await fetch(url, { method: 'GET', mode: 'no-cors' });
-    updateSyncStatus('connected', 'Saved ' + new Date().toLocaleTimeString());
+    await fetch(scriptUrl + '?action=set&payload=' + payload, { method:'GET', mode:'no-cors' });
+    updateSyncStatus('connected','Saved ' + new Date().toLocaleTimeString());
   } catch(e) {
-    updateSyncStatus('error', 'Save failed — check console');
-    console.error('Save error:', e);
+    updateSyncStatus('error','Save failed');
   }
+}
+
+async function pushToSheet() {
+  if (!scriptUrl) { showToast('Connect to Google Sheet in Settings first'); return; }
+  showToast('Pushing to Google Sheet...');
+  await saveData();
+  showToast('✓ Pushed ' + data.length + ' rows to Google Sheet');
 }
 
 function updateSyncStatus(state, label) {
   const dot = document.getElementById('sync-dot');
-  const lbl = document.getElementById('sync-label');
-  dot.className = 'sync-dot' + (state ? ' ' + state : '');
-  lbl.textContent = label;
+  dot.className = 'sync-dot' + (state ? ' '+state : '');
+  document.getElementById('sync-label').textContent = label;
   if (state === 'connected') document.getElementById('last-sync-label').textContent = 'Last sync: ' + new Date().toLocaleTimeString();
 }
 
@@ -460,16 +385,15 @@ function renderTable() {
   const pod = document.getElementById('filter-pod').value;
   const noSubOnly = document.getElementById('filter-nosub').checked;
 
-  let sorted = [...data].map((r,i) => ({r,i}));
-  sorted.sort((a,b) => {
-    let av = String(a.r[sortCol]||'').toLowerCase();
-    let bv = String(b.r[sortCol]||'').toLowerCase();
+  let sorted = [...data].map((r,i)=>({r,i}));
+  sorted.sort((a,b)=>{
+    let av=String(a.r[sortCol]||'').toLowerCase(), bv=String(b.r[sortCol]||'').toLowerCase();
     return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
   });
 
   filteredIndices = [];
   const rows = [];
-  sorted.forEach(({r, i}) => {
+  sorted.forEach(({r,i})=>{
     if (hdm && r.HDM !== hdm) return;
     if (pod && r.Pod !== pod) return;
     if (noSubOnly && r['Subscription ID']) return;
@@ -484,32 +408,29 @@ function renderTable() {
 
 function buildRow(r, idx, rowNum) {
   const noSub = !r['Subscription ID'];
-  const isNew = r._new;
-  const isRemoved = r._removed;
-  let cls = '';
-  if (isNew) cls = 'new-row';
-  if (isRemoved) cls = 'removed-row';
+  const isNew = r._new, isRemoved = r._removed;
+  let cls = isNew ? 'new-row' : isRemoved ? 'removed-row' : '';
 
   const cells = COLUMNS.map(c => {
-    let val = r[c.key];
-    let display = '';
+    let val = r[c.key], display = '';
     if (c.key === 'Name') {
-      display = `<span class="flag-nosub" style="display:${noSub?'inline-flex':'none'};gap:4px;align-items:center;">⚑ </span>${escHtml(val)}${isNew?'<span class="tag-new">NEW</span>':''}${isRemoved?'<span class="tag-removed">REMOVED</span>':''}`;
+      display = (noSub ? '<span style="color:var(--tag-no-sub);margin-right:3px;">⚑</span>' : '') +
+        escHtml(val) + (isNew?'<span class="tag-new">NEW</span>':'') + (isRemoved?'<span class="tag-removed">REMOVED</span>':'');
     } else if (c.type === 'bool') {
       display = `<span class="tag ${val?'tag-bool-true':'tag-bool-false'}">${val?'Yes':'No'}</span>`;
     } else if (c.key === 'Status') {
       display = `<span class="tag tag-active">${escHtml(val)}</span>`;
     } else if (c.key === 'Subscription ID' && noSub) {
-      display = `<span class="tag tag-nosub">⚑ Not signed</span>`;
+      display = '<span class="tag tag-nosub">⚑ Not signed</span>';
     } else {
       display = escHtml(String(val||''));
     }
-    const editClass = c.editable ? 'editable' : '';
-    const editAttr = c.editable ? `ondblclick="startEdit(this,${idx},'${c.key}')"` : '';
-    return `<td class="${editClass}" ${editAttr} title="${escHtml(String(val||''))}">${display}</td>`;
+    const ec = c.editable ? 'editable' : '';
+    const ea = c.editable ? `ondblclick="startEdit(this,${idx},'${c.key}')"` : '';
+    return `<td class="${ec}" ${ea} title="${escHtml(String(val||''))}">${display}</td>`;
   }).join('');
 
-  return `<tr class="${cls}" onclick="selectRow(this)">${'<td>'+rowNum+'</td>'}${cells}</tr>`;
+  return `<tr class="${cls}" onclick="selectRow(this)"><td>${rowNum}</td>${cells}</tr>`;
 }
 
 function escHtml(s) {
@@ -518,48 +439,42 @@ function escHtml(s) {
 
 // ─── SORT / FILTER ────────────────────────────────────────────────────────────
 function sortBy(key) {
-  if (sortCol === key) sortAsc = !sortAsc; else { sortCol = key; sortAsc = true; }
-  document.querySelectorAll('thead th .sort-arrow').forEach(el => {
-    const k = el.parentElement.dataset.key;
-    el.className = 'sort-arrow' + (k===sortCol?' active':'');
-    el.textContent = k===sortCol?(sortAsc?'↑':'↓'):'↕';
+  if (sortCol===key) sortAsc=!sortAsc; else { sortCol=key; sortAsc=true; }
+  document.querySelectorAll('thead th .sort-arrow').forEach(el=>{
+    const k=el.parentElement.dataset.key;
+    el.className='sort-arrow'+(k===sortCol?' active':'');
+    el.textContent=k===sortCol?(sortAsc?'↑':'↓'):'↕';
   });
   renderTable();
 }
-
 function filterTable() { renderTable(); updateStats(); }
-
-function selectRow(tr) {
-  document.querySelectorAll('tbody tr.selected').forEach(r => r.classList.remove('selected'));
-  tr.classList.add('selected');
-}
+function selectRow(tr) { document.querySelectorAll('tbody tr.selected').forEach(r=>r.classList.remove('selected')); tr.classList.add('selected'); }
 
 // ─── INLINE EDIT ─────────────────────────────────────────────────────────────
 function startEdit(td, idx, key) {
-  const col = COLUMNS.find(c => c.key === key);
-  if (!col || !col.editable) return;
+  const col = COLUMNS.find(c=>c.key===key);
+  if (!col||!col.editable) return;
   const cur = data[idx][key];
   td.className = 'editing';
-
-  if (col.type === 'bool') {
-    const sel = document.createElement('select');
-    sel.innerHTML = '<option value="true">Yes</option><option value="false">No</option>';
-    sel.value = String(cur);
-    sel.onblur = () => commitEdit(td, idx, key, sel.value === 'true', col);
-    sel.onkeydown = e => { if(e.key==='Enter'||e.key==='Escape') sel.blur(); };
-    td.innerHTML = ''; td.appendChild(sel); sel.focus();
-  } else if (col.type === 'select') {
-    const sel = document.createElement('select');
-    sel.innerHTML = col.options.map(o=>`<option value="${o}"${o===cur?' selected':''}>${o}</option>`).join('');
-    sel.onblur = () => commitEdit(td, idx, key, sel.value, col);
-    sel.onkeydown = e => { if(e.key==='Enter'||e.key==='Escape') sel.blur(); };
-    td.innerHTML = ''; td.appendChild(sel); sel.focus();
+  if (col.type==='bool') {
+    const sel=document.createElement('select');
+    sel.innerHTML='<option value="true">Yes</option><option value="false">No</option>';
+    sel.value=String(cur);
+    sel.onblur=()=>commitEdit(td,idx,key,sel.value==='true',col);
+    sel.onkeydown=e=>{if(e.key==='Enter'||e.key==='Escape')sel.blur();};
+    td.innerHTML=''; td.appendChild(sel); sel.focus();
+  } else if (col.type==='select') {
+    const sel=document.createElement('select');
+    sel.innerHTML=col.options.map(o=>`<option value="${o}"${o===cur?' selected':''}>${o}</option>`).join('');
+    sel.onblur=()=>commitEdit(td,idx,key,sel.value,col);
+    sel.onkeydown=e=>{if(e.key==='Enter'||e.key==='Escape')sel.blur();};
+    td.innerHTML=''; td.appendChild(sel); sel.focus();
   } else {
-    const inp = document.createElement('input');
-    inp.value = cur || '';
-    inp.onblur = () => commitEdit(td, idx, key, inp.value, col);
-    inp.onkeydown = e => { if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){inp.value=cur;inp.blur();} };
-    td.innerHTML = ''; td.appendChild(inp); inp.focus(); inp.select();
+    const inp=document.createElement('input');
+    inp.value=cur||'';
+    inp.onblur=()=>commitEdit(td,idx,key,inp.value,col);
+    inp.onkeydown=e=>{if(e.key==='Enter')inp.blur();if(e.key==='Escape'){inp.value=cur;inp.blur();}};
+    td.innerHTML=''; td.appendChild(inp); inp.focus(); inp.select();
   }
 }
 
@@ -570,272 +485,322 @@ function commitEdit(td, idx, key, newVal, col) {
     addChangelog('edit', data[idx]['Name'], `${key}: "${oldVal}" → "${newVal}"`);
     saveData();
   }
-  renderTable();
-  updateStats();
+  renderTable(); updateStats();
 }
 
 // ─── STATS ────────────────────────────────────────────────────────────────────
 function updateStats() {
-  const visible = filteredIndices.map(i => data[i]);
+  const visible = filteredIndices.map(i=>data[i]);
   document.getElementById('stat-total').textContent = visible.length;
-  document.getElementById('stat-nosub').textContent = visible.filter(r => !r['Subscription ID']).length;
-  const newCount = visible.filter(r => r._new).length;
-  const removedCount = visible.filter(r => r._removed).length;
-  document.getElementById('stat-new').textContent = newCount;
-  document.getElementById('stat-removed').textContent = removedCount;
-  document.getElementById('stat-new-wrap').style.display = newCount > 0 ? '' : 'none';
-  document.getElementById('stat-removed-wrap').style.display = removedCount > 0 ? '' : 'none';
+  document.getElementById('stat-nosub').textContent = visible.filter(r=>!r['Subscription ID']).length;
+  const nc = visible.filter(r=>r._new).length, rc = visible.filter(r=>r._removed).length;
+  document.getElementById('stat-new').textContent = nc;
+  document.getElementById('stat-removed').textContent = rc;
+  document.getElementById('stat-new-wrap').style.display = nc>0?'':'none';
+  document.getElementById('stat-removed-wrap').style.display = rc>0?'':'none';
 }
 
 // ─── CHANGELOG ───────────────────────────────────────────────────────────────
 function addChangelog(type, name, detail) {
-  changelog.unshift({ type, name, detail, time: new Date().toLocaleTimeString() });
-  const cc = document.getElementById('change-count');
-  cc.style.display = '';
-  cc.textContent = changelog.length;
+  changelog.unshift({type,name,detail,time:new Date().toLocaleTimeString()});
+  const cc=document.getElementById('change-count');
+  cc.style.display=''; cc.textContent=changelog.length;
 }
-
 function toggleChangelog() {
-  const el = document.getElementById('changelog-overlay');
-  el.classList.toggle('open');
-  if (el.classList.contains('open')) renderChangelog();
+  document.getElementById('changelog-overlay').classList.toggle('open');
+  if (document.getElementById('changelog-overlay').classList.contains('open')) renderChangelog();
 }
-
 function renderChangelog() {
-  const body = document.getElementById('changelog-body');
-  if (!changelog.length) { body.innerHTML = '<p style="color:#9e9e9e;font-size:13px;">No changes yet.</p>'; return; }
-  const icons = { add: {cls:'cl-icon-add',sym:'+'}, remove:{cls:'cl-icon-remove',sym:'−'}, edit:{cls:'cl-icon-edit',sym:'✎'} };
-  body.innerHTML = changelog.map(c => {
-    const ic = icons[c.type] || icons.edit;
+  const body=document.getElementById('changelog-body');
+  if (!changelog.length) { body.innerHTML='<p style="color:#9e9e9e;font-size:13px;">No changes yet.</p>'; return; }
+  const icons={add:{cls:'cl-icon-add',sym:'+'},remove:{cls:'cl-icon-remove',sym:'−'},edit:{cls:'cl-icon-edit',sym:'✎'}};
+  body.innerHTML=changelog.map(c=>{
+    const ic=icons[c.type]||icons.edit;
     return `<div class="cl-item"><div class="cl-icon ${ic.cls}">${ic.sym}</div><div class="cl-text"><span class="cl-name">${escHtml(c.name)}</span> <span class="cl-detail">${escHtml(c.detail)}</span></div><div class="cl-time">${c.time}</div></div>`;
   }).join('');
 }
 
-// ─── UPLOAD RAW DATA ─────────────────────────────────────────────────────────
-function openUploadModal() { document.getElementById('upload-modal').classList.add('open'); }
-function closeUploadModal() { document.getElementById('upload-modal').classList.remove('open'); pendingRawData = null; document.getElementById('upload-preview').style.display='none'; document.getElementById('confirm-upload-btn').disabled=true; }
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function cleanRate(val) {
+  const n = parseFloat(val);
+  if (isNaN(n)) return String(val||'');
+  return n === Math.floor(n) ? String(Math.floor(n)) : String(Math.round(n*100)/100);
+}
 
-const dropZone = document.getElementById('upload-drop');
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); if(e.dataTransfer.files[0]) handleRawUpload(e.dataTransfer.files[0]); });
+function ratesEqual(a, b) {
+  const na = parseFloat(a), nb = parseFloat(b);
+  if (isNaN(na) || isNaN(nb)) return String(a||'') === String(b||'');
+  return Math.abs(na - nb) < 0.001;
+}
 
-async function handleRawUpload(file) {
-  if (!file) return;
+function stripCommas(s) { return String(s||'').replace(/,/g,''); }
+
+function isHDM(role, name) {
+  return (role||'').trim().toLowerCase() === 'hdm' || HDM_NAMES.includes((name||'').trim());
+}
+
+// ─── PARSE FILE ───────────────────────────────────────────────────────────────
+async function parseFile(file) {
   const buf = await file.arrayBuffer();
   let rows = [];
-  if (file.name.endsWith('.csv')) {
+  if (file.name.toLowerCase().endsWith('.csv')) {
     const text = new TextDecoder().decode(buf);
     rows = text.trim().split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g,'')));
   } else {
-    const wb = XLSX.read(buf, {type:'array'});
+    const wb = XLSX.read(buf,{type:'array'});
     const ws = wb.Sheets[wb.SheetNames[0]];
-    rows = XLSX.utils.sheet_to_json(ws, {header:1});
+    rows = XLSX.utils.sheet_to_json(ws,{header:1});
   }
+  return rows;
+}
+
+// ─── UPLOAD (shared modal for raw + base) ─────────────────────────────────────
+function openUploadModal(mode) {
+  uploadMode = mode;
+  pendingUploadData = null;
+  document.getElementById('upload-modal-title').textContent = mode==='raw' ? 'Upload Expert Raw Data' : 'Upload Base Sheet';
+  document.getElementById('upload-modal-desc').textContent = mode==='raw'
+    ? 'Upload the latest raw data export. New experts will be auto-assigned round-robin. HDM roles are filtered out automatically.'
+    : 'Upload the full Huma All Experts sheet. This replaces the working dataset while preserving HDM/Pod assignments for existing experts.';
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('confirm-upload-btn').disabled = true;
+  document.getElementById('upload-drop').innerHTML = '<div style="font-size:28px;margin-bottom:8px;">📄</div><p><strong>Click to upload</strong> or drag and drop</p><p>CSV or Excel (.xlsx, .xls)</p><input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleUpload(this.files[0])">';
+  document.getElementById('upload-modal').classList.add('open');
+}
+function closeUploadModal() {
+  document.getElementById('upload-modal').classList.remove('open');
+  pendingUploadData = null;
+}
+
+const dropZone = document.getElementById('upload-drop');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();document.getElementById('upload-drop').classList.add('dragover');});
+dropZone.addEventListener('dragleave',()=>document.getElementById('upload-drop').classList.remove('dragover'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();document.getElementById('upload-drop').classList.remove('dragover');if(e.dataTransfer.files[0])handleUpload(e.dataTransfer.files[0]);});
+
+async function handleUpload(file) {
+  if (!file) return;
+  const rows = await parseFile(file);
   if (rows.length < 2) { showToast('File appears empty'); return; }
-  const headers = rows[0].map(String);
-  const nameIdx = headers.findIndex(h => /^name$/i.test(h.trim()));
-  const subIdx = headers.findIndex(h => /subscription/i.test(h));
+  const headers = rows[0].map(h=>String(h).trim());
+  const nameIdx = headers.findIndex(h=>/^name$/i.test(h));
+  const emailIdx = headers.findIndex(h=>/personal.?email/i.test(h));
   if (nameIdx < 0) { showToast('Could not find "Name" column'); return; }
 
-  pendingRawData = rows.slice(1).map(r => {
-    const obj = {};
-    headers.forEach((h,i) => obj[h.trim()] = String(r[i]||'').trim());
+  let parsed = rows.slice(1).map(r=>{
+    const obj={};
+    headers.forEach((h,i)=>{ obj[h] = String(r[i]||'').trim(); });
+    // Strip commas from name
+    if (obj.Name) obj.Name = stripCommas(obj.Name);
+    // Clean rates
+    if (obj['Pay Rate']) obj['Pay Rate'] = cleanRate(obj['Pay Rate']);
+    if (obj['Client Rate']) obj['Client Rate'] = cleanRate(obj['Client Rate']);
     return obj;
-  }).filter(r => r.Name && (r.Role||'').trim().toLowerCase() !== 'hdm');
+  }).filter(r => r.Name && !isHDM(r.Role, r.Name));
 
-  // Compare
-  const existingNames = new Set(data.map(r => r.Name.trim().toLowerCase()));
-  const newNames = pendingRawData.filter(r => !existingNames.has(r.Name.trim().toLowerCase()));
-  const rawNames = new Set(pendingRawData.map(r => r.Name.trim().toLowerCase()));
-  const removedNames = data.filter(r => !rawNames.has(r.Name.trim().toLowerCase()));
-  const noSubCount = pendingRawData.filter(r => !r['Subscription ID'] || r['Subscription ID'].trim() === '').length;
+  pendingUploadData = parsed;
 
-  document.getElementById('upload-preview').style.display = '';
+  // Preview diff
+  const existingByEmail = {};
+  data.forEach(r=>{ if(r['Personal Email']) existingByEmail[r['Personal Email'].toLowerCase()] = r; });
+  const existingEmails = new Set(Object.keys(existingByEmail));
+  const incomingEmails = new Set(parsed.map(r=>(r['Personal Email']||'').toLowerCase()).filter(Boolean));
+
+  const newOnes = parsed.filter(r => r['Personal Email'] && !existingEmails.has(r['Personal Email'].toLowerCase()));
+  const removedOnes = uploadMode==='raw' ? data.filter(r => r['Personal Email'] && !incomingEmails.has(r['Personal Email'].toLowerCase())) : [];
+  const noSubCount = parsed.filter(r=>!r['Subscription ID']).length;
+
+  document.getElementById('upload-preview').style.display='';
   document.getElementById('upload-preview').innerHTML =
-    `<strong>${pendingRawData.length}</strong> experts in file &nbsp;|&nbsp; ` +
-    `<span style="color:var(--green)"><strong>+${newNames.length}</strong> new</span> &nbsp;|&nbsp; ` +
-    `<span style="color:var(--red)"><strong>${removedNames.length}</strong> removed</span> &nbsp;|&nbsp; ` +
+    `<strong>${parsed.length}</strong> experts in file &nbsp;|&nbsp; ` +
+    `<span style="color:var(--green)"><strong>+${newOnes.length}</strong> new</span> &nbsp;|&nbsp; ` +
+    (uploadMode==='raw' ? `<span style="color:var(--red)"><strong>${removedOnes.length}</strong> removed</span> &nbsp;|&nbsp; ` : '') +
     `<span style="color:var(--tag-no-sub)"><strong>${noSubCount}</strong> no subscription ID</span>`;
 
   document.getElementById('confirm-upload-btn').disabled = false;
-  dropZone.innerHTML = `<div style="font-size:20px">✓</div><p><strong>${file.name}</strong></p>`;
+  document.getElementById('upload-drop').innerHTML = `<div style="font-size:20px">✓</div><p><strong>${file.name}</strong></p>`;
 }
 
 function confirmUpload() {
-  if (!pendingRawData) return;
+  if (!pendingUploadData) return;
   const HDMs = COLUMNS.find(c=>c.key==='HDM').options;
   const Pods = COLUMNS.find(c=>c.key==='Pod').options;
-  let hdmIdx = 0, podIdx = 0;
+  let rrIdx = 0;
 
-  const existingByName = {};
-  data.forEach(r => { existingByName[r.Name.trim().toLowerCase()] = r; });
-  const rawNames = new Set(pendingRawData.map(r => r.Name.trim().toLowerCase()));
+  if (uploadMode === 'base') {
+    // Base sheet upload: rebuild data, preserve existing HDM/Pod by email
+    const existingByEmail = {};
+    data.forEach(r=>{ if(r['Personal Email']) existingByEmail[r['Personal Email'].toLowerCase()] = r; });
 
-  // Mark removed
-  data.forEach(r => { r._removed = !rawNames.has(r.Name.trim().toLowerCase()); });
-
-  // Update existing fields from raw data, add new
-  pendingRawData.forEach(raw => {
-    const key = raw.Name.trim().toLowerCase();
-    if (existingByName[key]) {
-      const ex = existingByName[key];
-      ['Role','Pay Rate','Client Rate','Subscription ID','Source','Country'].forEach(f => {
-        if (raw[f] !== undefined) ex[f] = raw[f];
-      });
-      ex._new = false;
-      ex._removed = false;
-    } else {
-      // New expert — round-robin assign
-      const newRecord = {
-        Name: raw.Name, 'Personal Email': raw['Personal Email']||'',
-        'Company Email': raw['Company Email']||'', Domain: raw.Domain||'',
-        'Setup Complete': false, Status: raw.Status||'active',
-        Pod: Pods[podIdx % Pods.length], 'Not On Slack': '',
-        HDM: HDMs[hdmIdx % HDMs.length], Role: raw.Role||'',
-        'Pay Rate': raw['Pay Rate']||'', 'Client Rate': raw['Client Rate']||'',
+    data = pendingUploadData.map(raw => {
+      const key = (raw['Personal Email']||'').toLowerCase();
+      const existing = existingByEmail[key];
+      return {
+        'Name': raw.Name || (existing&&existing.Name) || '',
+        'Personal Email': raw['Personal Email']||'',
+        'Company Email': raw['Company Email']||'',
+        'Domain': raw.Domain||'',
+        'Setup Complete': existing ? existing['Setup Complete'] : false,
+        'Status': raw.Status || (existing&&existing.Status) || '',
+        'Pod': raw.Pod || (existing&&existing.Pod) || '',
+        'Not On Slack': raw['Not On Slack'] || (existing&&existing['Not On Slack']) || '',
+        'HDM': raw.HDM || (existing&&existing.HDM) || '',
+        'Role': raw.Role||'',
+        'Pay Rate': raw['Pay Rate']||'',
+        'Client Rate': raw['Client Rate']||'',
         'Subscription ID': raw['Subscription ID']||'',
-        Source: raw.Source||'', Country: raw.Country||'',
-        _new: true
+        'Source': raw.Source||'',
+        'Country': raw.Country||'',
       };
-      data.push(newRecord);
-      addChangelog('add', raw.Name, `Assigned to ${newRecord.HDM} / ${newRecord.Pod}`);
-      hdmIdx++; podIdx++;
-    }
-  });
+    });
+    addChangelog('edit','Base Sheet',`Replaced with ${data.length} rows`);
 
-  // Log removed
-  data.filter(r=>r._removed).forEach(r => addChangelog('remove', r.Name, 'No longer in raw data'));
+  } else {
+    // Raw data upload: match by email, add new, mark removed
+    const existingByEmail = {};
+    data.forEach(r=>{ if(r['Personal Email']) existingByEmail[r['Personal Email'].toLowerCase()] = r; });
+    const incomingEmails = new Set(pendingUploadData.map(r=>(r['Personal Email']||'').toLowerCase()).filter(Boolean));
+
+    // Mark removed
+    data.forEach(r=>{ r._removed = r['Personal Email'] && !incomingEmails.has(r['Personal Email'].toLowerCase()); });
+
+    // Sort existing by current count per HDM for balanced round-robin
+    const counts = {};
+    HDMs.forEach(h=>{ counts[h] = data.filter(r=>r.HDM===h&&!r._removed).length; });
+
+    pendingUploadData.forEach(raw => {
+      const key = (raw['Personal Email']||'').toLowerCase();
+      if (existingByEmail[key]) {
+        const ex = existingByEmail[key];
+        // Update fields from raw, but keep HDM/Pod/Setup Complete
+        ['Role','Pay Rate','Client Rate','Subscription ID','Source','Country'].forEach(f=>{
+          if (raw[f] !== undefined && raw[f] !== '') {
+            // For rates: only update if value is actually different
+            if (f==='Pay Rate'||f==='Client Rate') {
+              if (!ratesEqual(ex[f], raw[f])) ex[f] = cleanRate(raw[f]);
+            } else {
+              ex[f] = raw[f];
+            }
+          }
+        });
+        ex.Name = raw.Name || ex.Name;
+        ex._new = false; ex._removed = false;
+      } else {
+        // New — assign to least-loaded HDM and matching Pod
+        const hdm = HDMs.reduce((a,b)=>(counts[a]||0)<=(counts[b]||0)?a:b);
+        const podIdx = HDMs.indexOf(hdm);
+        const pod = Pods[podIdx % Pods.length];
+        counts[hdm] = (counts[hdm]||0) + 1;
+        const newRecord = {
+          Name: raw.Name, 'Personal Email': raw['Personal Email']||'',
+          'Company Email': raw['Company Email']||'', Domain: raw.Domain||'',
+          'Setup Complete': false, Status: raw.Status||'active',
+          Pod: pod, 'Not On Slack':'',
+          HDM: hdm, Role: raw.Role||'',
+          'Pay Rate': cleanRate(raw['Pay Rate']), 'Client Rate': cleanRate(raw['Client Rate']),
+          'Subscription ID': raw['Subscription ID']||'',
+          Source: raw.Source||'', Country: raw.Country||'',
+          _new: true
+        };
+        data.push(newRecord);
+        addChangelog('add', raw.Name, `Assigned to ${hdm} / ${pod}`);
+      }
+    });
+    data.filter(r=>r._removed).forEach(r=>addChangelog('remove',r.Name,'No longer in raw data'));
+  }
 
   closeUploadModal();
   renderTable();
   updateStats();
   saveData();
-  showToast('Raw data applied successfully');
+  showToast('Upload applied successfully');
 }
 
-// ─── PASTE MODAL ──────────────────────────────────────────────────────────────
+// ─── PASTE ────────────────────────────────────────────────────────────────────
 function openPasteModal() { document.getElementById('paste-modal').classList.add('open'); }
 function closePasteModal() { document.getElementById('paste-modal').classList.remove('open'); document.getElementById('paste-input').value=''; document.getElementById('paste-preview').textContent=''; }
 
-document.getElementById('paste-input').addEventListener('input', function() {
-  const text = this.value.trim();
-  if (!text) { document.getElementById('paste-preview').textContent=''; return; }
-  const lines = text.split('\n').filter(Boolean);
-  document.getElementById('paste-preview').textContent = `${lines.length-1} data rows detected (first row treated as header)`;
+document.getElementById('paste-input').addEventListener('input',function(){
+  const lines=this.value.trim().split('\n').filter(Boolean);
+  document.getElementById('paste-preview').textContent = lines.length>1 ? `${lines.length-1} data rows detected` : '';
 });
 
 function confirmPaste() {
-  const text = document.getElementById('paste-input').value.trim();
+  const text=document.getElementById('paste-input').value.trim();
   if (!text) return;
-  const lines = text.split('\n').filter(Boolean);
-  if (lines.length < 2) { showToast('Need at least a header row + 1 data row'); return; }
-  const sep = lines[0].includes('\t') ? '\t' : ',';
-  const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g,''));
-  const rows = lines.slice(1).map(line => {
-    const vals = line.split(sep).map(v => v.trim().replace(/^"|"$/g,''));
-    const obj = {};
-    headers.forEach((h,i) => obj[h] = vals[i]||'');
+  const lines=text.split('\n').filter(Boolean);
+  if (lines.length<2){showToast('Need header + at least 1 row');return;}
+  const sep=lines[0].includes('\t')?'\t':',';
+  const headers=lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
+  const rows=lines.slice(1).map(line=>{
+    const vals=line.split(sep).map(v=>v.trim().replace(/^"|"$/g,''));
+    const obj={};
+    headers.forEach((h,i)=>obj[h]=vals[i]||'');
+    if(obj.Name) obj.Name=stripCommas(obj.Name);
     return obj;
-  });
+  }).filter(r=>r.Name&&!isHDM(r.Role,r.Name));
 
-  const existingByName = {};
-  data.forEach(r => existingByName[r.Name.trim().toLowerCase()] = r);
-
-  rows.forEach(row => {
-    const key = (row.Name||'').trim().toLowerCase();
-    if (!key) return;
-    if (existingByName[key]) {
-      const ex = existingByName[key];
-      headers.forEach(h => { if (h !== 'Name' && row[h] !== undefined) ex[h] = row[h]; });
+  const existingByEmail={};
+  data.forEach(r=>{if(r['Personal Email'])existingByEmail[r['Personal Email'].toLowerCase()]=r;});
+  rows.forEach(row=>{
+    const key=(row['Personal Email']||'').toLowerCase();
+    if(key&&existingByEmail[key]){
+      const ex=existingByEmail[key];
+      headers.forEach(h=>{if(h!=='Name'&&row[h]!==undefined)ex[h]=row[h];});
     } else {
-      data.push({...row, _new: true});
-      addChangelog('add', row.Name, 'Added via paste');
+      data.push({...row,_new:true});
+      addChangelog('add',row.Name,'Added via paste');
     }
   });
-
   closePasteModal();
-  renderTable();
-  updateStats();
-  saveData();
+  renderTable(); updateStats(); saveData();
   showToast(`${rows.length} rows applied`);
 }
 
 // ─── EXPORT ───────────────────────────────────────────────────────────────────
 function exportCSV() {
-  const headers = COLUMNS.map(c => c.label).join(',');
-  const rows = data.filter(r=>!r._removed).map(r =>
-    COLUMNS.map(c => {
-      const v = String(r[c.key]||'').replace(/"/g,'""');
-      return v.includes(',') ? `"${v}"` : v;
+  const headers = COLUMNS.map(c=>c.label).join(',');
+  const rows = data.filter(r=>!r._removed).map(r=>
+    COLUMNS.map(c=>{
+      const v = stripCommas(String(r[c.key]||''));
+      return v;
     }).join(',')
   );
-  const csv = [headers, ...rows].join('\n');
-  const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'huma_experts_' + new Date().toISOString().slice(0,10) + '.csv';
+  const csv=[headers,...rows].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='huma_experts_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
 }
 
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
-function openSettings() {
-  document.getElementById('script-url-input').value = scriptUrl;
-  document.getElementById('settings-modal').classList.add('open');
-}
-function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+function openSettings(){ document.getElementById('script-url-input').value=scriptUrl; document.getElementById('settings-modal').classList.add('open'); }
+function closeSettings(){ document.getElementById('settings-modal').classList.remove('open'); }
 
 async function testConnection() {
-  const url = document.getElementById('script-url-input').value.trim();
-  if (!url) { showToast('Enter a URL first'); return; }
+  const url=document.getElementById('script-url-input').value.trim();
+  if(!url){showToast('Enter a URL first');return;}
   try {
-    const res = await fetch(url + '?action=ping');
-    const json = await res.json();
-    if (json.ok) showToast('✓ Connection successful!');
-    else showToast('Got response but unexpected format');
-  } catch(e) { showToast('Connection failed — check the URL'); }
+    const res=await fetch(url+'?action=ping');
+    const json=await res.json();
+    showToast(json.ok?'✓ Connection successful!':'Unexpected response');
+  } catch(e){showToast('Connection failed — check the URL');}
 }
 
-function saveSettings() {
-  scriptUrl = document.getElementById('script-url-input').value.trim();
-  localStorage.setItem('script_url', scriptUrl);
+function saveSettings(){
+  scriptUrl=document.getElementById('script-url-input').value.trim();
+  localStorage.setItem('script_url',scriptUrl);
   closeSettings();
-  if (scriptUrl) { loadData().then(() => { renderTable(); updateStats(); }); }
+  if(scriptUrl){loadData().then(()=>{renderTable();updateStats();});}
 }
 
 // ─── TOAST ───────────────────────────────────────────────────────────────────
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
 }
 
 init();
-
-// ─── PASSWORD ────────────────────────────────────────────────
-// Change this to whatever password you want
-const APP_PASSWORD = 'huma2024';
-
-function checkPassword() {
-  const val = document.getElementById('pw-input').value;
-  if (val === APP_PASSWORD) {
-    sessionStorage.setItem('huma_auth', '1');
-    document.getElementById('pw-screen').style.display = 'none';
-    document.getElementById('app-wrap').style.display = 'flex';
-  } else {
-    document.getElementById('pw-error').textContent = 'Incorrect password. Try again.';
-    document.getElementById('pw-input').value = '';
-    document.getElementById('pw-input').focus();
-  }
-}
-
-// Check on load
-if (sessionStorage.getItem('huma_auth') === '1') {
-  document.getElementById('pw-screen').style.display = 'none';
-  document.getElementById('app-wrap').style.display = 'flex';
-}
-
 </script>
-</div><!-- /app-wrap -->
 </body>
 </html>
