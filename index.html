@@ -127,6 +127,21 @@
   /* Row count / tabs */
   .row-count { font-size:11px;color:var(--gray);padding:3px 16px;border-top:1px solid var(--border);background:#fafafa;flex-shrink:0; }
   .sheet-tabs { display:flex;align-items:center;border-top:1px solid var(--border);background:#f8f9fa;flex-shrink:0;padding:0 8px; }
+  .assignments-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center; }
+  .assignments-overlay.open { display:flex; }
+  .assignments-box { background:#fff;border-radius:8px;width:720px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2); }
+  .assignments-header { display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border); }
+  .assignments-header h2 { font-size:16px;font-weight:500;margin:0; }
+  .assignments-body { flex:1;overflow:auto;padding:16px 20px; }
+  .assignments-table { width:100%;border-collapse:collapse;font-size:13px; }
+  .assignments-table th { background:var(--header-bg);padding:7px 12px;text-align:left;font-weight:500;font-size:12px;color:var(--gray);border-bottom:2px solid var(--border);white-space:nowrap; }
+  .assignments-table td { padding:6px 12px;border-bottom:1px solid #f0f0f0;white-space:nowrap; }
+  .assignments-table tr:hover td { background:var(--row-hover); }
+  .assignments-footer { padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fafafa;border-radius:0 0 8px 8px; }
+  .copy-area { font-size:11px;color:var(--gray);flex:1; }
+  .tab-btns { display:flex;gap:6px;margin-bottom:12px; }
+  .tab-btn { padding:5px 14px;border:1px solid var(--border);border-radius:4px;background:#fff;font-size:12px;cursor:pointer;font-family:var(--font); }
+  .tab-btn.active { background:var(--blue);color:#fff;border-color:var(--blue); }
   .sheet-tab { padding:6px 16px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;color:var(--gray); }
   .sheet-tab.active { border-bottom-color:var(--blue);color:var(--blue);font-weight:500; }
 </style>
@@ -166,6 +181,7 @@
   <button class="btn" onclick="openPasteModal()">⊞ Paste Data</button>
   <div class="toolbar-sep"></div>
   <button class="btn" onclick="exportCSV()">↓ Export CSV</button>
+  <button class="btn" style="background:#fff3e0;border-color:#ffcc80;color:#e65100;" onclick="openAssignmentsPanel()">📋 Copy New Assignments</button>
   <button class="btn" onclick="toggleChangelog()">⟳ Changes <span id="change-count" style="display:none;background:#e53935;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:2px;"></span></button>
   <div class="toolbar-sep"></div>
   <div class="search-box">
@@ -258,6 +274,29 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- New Assignments Panel -->
+<div class="assignments-overlay" id="assignments-overlay" onclick="if(event.target===this)closeAssignmentsPanel()">
+  <div class="assignments-box">
+    <div class="assignments-header">
+      <h2 id="assignments-title">New Assignments</h2>
+      <button class="btn" style="border:none;padding:4px 8px;" onclick="closeAssignmentsPanel()">✕</button>
+    </div>
+    <div class="assignments-body">
+      <div class="tab-btns">
+        <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">🟢 New Experts</button>
+        <button class="tab-btn" id="tab-newsub" onclick="switchTab('newsub')">★ New Subscriptions</button>
+        <button class="tab-btn" id="tab-all" onclick="switchTab('all')">All Experts</button>
+      </div>
+      <div id="assignments-table-wrap"></div>
+    </div>
+    <div class="assignments-footer">
+      <span class="copy-area" id="copy-hint">Select a tab then click Copy — paste directly into your Google Sheet</span>
+      <button class="btn" onclick="copyAssignmentsTable()">📋 Copy to clipboard</button>
+      <button class="btn primary" onclick="downloadAssignmentsCSV()">↓ Download CSV</button>
+    </div>
+  </div>
+</div>
 
 </div><!-- /app-wrap -->
 
@@ -838,6 +877,101 @@ function showToast(msg){
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2800);
 }
+
+// ─── ASSIGNMENTS PANEL ───────────────────────────────────────
+let currentTab = 'new';
+
+function openAssignmentsPanel() {
+  currentTab = 'new';
+  document.getElementById('assignments-overlay').classList.add('open');
+  renderAssignmentsTab();
+}
+function closeAssignmentsPanel() {
+  document.getElementById('assignments-overlay').classList.remove('open');
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  ['new','newsub','all'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+  renderAssignmentsTab();
+}
+
+function getTabRows() {
+  if (currentTab === 'new') return data.filter(r => r._new && !r._removed);
+  if (currentTab === 'newsub') return data.filter(r => r._newSub && !r._removed);
+  return data.filter(r => !r._removed);
+}
+
+function renderAssignmentsTab() {
+  const rows = getTabRows();
+  const titles = { new: '🟢 New Experts — ' + rows.length + ' people', newsub: '★ New Subscriptions — ' + rows.length + ' people', all: 'All Experts — ' + rows.length + ' people' };
+  document.getElementById('assignments-title').textContent = titles[currentTab];
+
+  const cols = ['Name','Personal Email','Company Email','HDM','Pod','Subscription ID','Pay Rate','Client Rate','Role','Domain','Status','Country'];
+
+  if (rows.length === 0) {
+    document.getElementById('assignments-table-wrap').innerHTML =
+      '<p style="color:#9e9e9e;font-size:13px;padding:20px 0;">No records in this category yet. Upload raw data first.</p>';
+    return;
+  }
+
+  const thead = '<thead><tr>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr></thead>';
+  const tbody = '<tbody>' + rows.map(r =>
+    '<tr>' + cols.map(c => `<td>${escHtml(String(r[c]||''))}</td>`).join('') + '</tr>'
+  ).join('') + '</tbody>';
+
+  document.getElementById('assignments-table-wrap').innerHTML =
+    `<table class="assignments-table">${thead}${tbody}</table>`;
+
+  document.getElementById('copy-hint').textContent = rows.length + ' rows ready — click Copy and paste into Google Sheet';
+}
+
+function buildTSV() {
+  const rows = getTabRows();
+  const cols = ['Name','Personal Email','Company Email','HDM','Pod','Subscription ID','Pay Rate','Client Rate','Role','Domain','Status','Not On Slack','Setup Complete','Source','Country'];
+  const header = cols.join('	');
+  const lines = rows.map(r => cols.map(c => String(r[c]||'').replace(/	/g,' ')).join('	'));
+  return [header, ...lines].join('
+');
+}
+
+function copyAssignmentsTable() {
+  const tsv = buildTSV();
+  navigator.clipboard.writeText(tsv).then(() => {
+    showToast('✓ Copied! Paste into your Google Sheet now');
+  }).catch(() => {
+    // Fallback for browsers that block clipboard
+    const ta = document.createElement('textarea');
+    ta.value = tsv;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast('✓ Copied! Paste into your Google Sheet now');
+  });
+}
+
+function downloadAssignmentsCSV() {
+  const rows = getTabRows();
+  const cols = ['Name','Personal Email','Company Email','HDM','Pod','Subscription ID','Pay Rate','Client Rate','Role','Domain','Status','Not On Slack','Setup Complete','Source','Country'];
+  const header = cols.join(',');
+  const lines = rows.map(r => cols.map(c => {
+    const v = String(r[c]||'');
+    return v.includes(',') ? '"'+v+'"' : v;
+  }).join(','));
+  const csv = [header,...lines].join('
+');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  const suffix = currentTab==='new'?'new_experts':currentTab==='newsub'?'new_subscriptions':'all_experts';
+  a.download = 'huma_' + suffix + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
 
 init();
 </script>
