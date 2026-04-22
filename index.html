@@ -354,12 +354,32 @@ async function loadData() {
   updateSyncStatus('','Local data (not connected)');
 }
 
+function saveViaIframe(url) {
+  // Apps Script blocks fetch from external domains due to CORS.
+  // Loading the URL in a hidden iframe sends a real GET request
+  // that Apps Script accepts, with no CORS preflight.
+  return new Promise(resolve => {
+    const existing = document.getElementById('save-iframe');
+    if (existing) existing.remove();
+    const iframe = document.createElement('iframe');
+    iframe.id = 'save-iframe';
+    iframe.style.display = 'none';
+    iframe.src = url;
+    iframe.onload = () => { iframe.remove(); resolve(true); };
+    iframe.onerror = () => { iframe.remove(); resolve(false); };
+    document.body.appendChild(iframe);
+    // Fallback resolve after 8 seconds in case onload doesn't fire
+    setTimeout(() => resolve(true), 8000);
+  });
+}
+
 async function saveData() {
   if (!scriptUrl) return;
   try {
     updateSyncStatus('syncing','Saving...');
     const payload = encodeURIComponent(JSON.stringify({ data }));
-    await fetch(scriptUrl + '?action=set&payload=' + payload, { method:'GET', mode:'no-cors' });
+    const url = scriptUrl + '?action=set&payload=' + payload;
+    await saveViaIframe(url);
     updateSyncStatus('connected','Saved ' + new Date().toLocaleTimeString());
   } catch(e) {
     updateSyncStatus('error','Save failed');
@@ -368,9 +388,13 @@ async function saveData() {
 
 async function pushToSheet() {
   if (!scriptUrl) { showToast('Connect to Google Sheet in Settings first'); return; }
-  showToast('Pushing to Google Sheet...');
-  await saveData();
-  showToast('✓ Pushed ' + data.length + ' rows to Google Sheet');
+  updateSyncStatus('syncing','Pushing...');
+  showToast('Pushing ' + data.length + ' rows to Google Sheet...');
+  const payload = encodeURIComponent(JSON.stringify({ data }));
+  const url = scriptUrl + '?action=set&payload=' + payload;
+  await saveViaIframe(url);
+  updateSyncStatus('connected','Pushed ' + new Date().toLocaleTimeString());
+  showToast('✓ Done — check your Google Sheet');
 }
 
 function updateSyncStatus(state, label) {
